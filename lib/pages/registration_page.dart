@@ -39,6 +39,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
             end: Alignment.bottomCenter,
             colors: [
               Color(0xFFB3FFB3), // Light green at top
+              Color(0xFFFFCCCC), // Light pink in middle
               Color(0xFFB3FFB3), // Light green at bottom
             ],
           ),
@@ -89,28 +90,35 @@ class _RegistrationPageState extends State<RegistrationPage> {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 40),
 
-                    // Registration Form Card
+                    // Form Container Box
                     Container(
+                      padding: const EdgeInsets.all(24.0),
                       decoration: BoxDecoration(
-                        color: Colors.red.shade100.withOpacity(0.8),
-                        borderRadius: BorderRadius.circular(16),
+                        color: const Color(0xFFF0E6D6), // Light beige/cream color - same as login
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Fullname label
-                          const Padding(
-                            padding: EdgeInsets.only(left: 8, bottom: 4),
-                            child: Text(
-                              'Fullname',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                              ),
+                          const Text(
+                            'Fullname',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
                             ),
                           ),
+                          const SizedBox(height: 8),
 
                           // First name and Last name
                           Row(
@@ -121,13 +129,14 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.grey.shade300),
                                   ),
                                   child: TextField(
                                     controller: _firstNameController,
                                     decoration: const InputDecoration(
                                       hintText: 'First name',
                                       border: InputBorder.none,
-                                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                                     ),
                                   ),
                                 ),
@@ -140,104 +149,111 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.grey.shade300),
                                   ),
                                   child: TextField(
                                     controller: _lastNameController,
                                     decoration: const InputDecoration(
                                       hintText: 'Last name',
                                       border: InputBorder.none,
-                                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                                     ),
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 20),
 
                           // Email label
-                          const Padding(
-                            padding: EdgeInsets.only(left: 8, bottom: 4),
-                            child: Text(
-                              'Email',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                              ),
+                          const Text(
+                            'Email',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
                             ),
                           ),
+                          const SizedBox(height: 8),
 
                           // Email field
                           Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey.shade300),
                             ),
                             child: TextField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
                               decoration: const InputDecoration(
-                                prefixIcon: Icon(Icons.email),
+                                prefixIcon: Icon(Icons.email, color: Colors.grey),
                                 border: InputBorder.none,
-                                contentPadding: EdgeInsets.symmetric(vertical: 12),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                hintText: 'Enter your email',
                               ),
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 20),
 
                           // Mobile label
-                          const Padding(
-                            padding: EdgeInsets.only(left: 8, bottom: 4),
-                            child: Text(
-                              'Mobile no.',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                              ),
+                          const Text(
+                            'Mobile no.',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
                             ),
                           ),
+                          const SizedBox(height: 8),
 
                           // Mobile field
                           Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey.shade300),
                             ),
                             child: TextField(
                               controller: _mobileController,
                               keyboardType: TextInputType.phone,
                               decoration: const InputDecoration(
-                                prefixIcon: Icon(Icons.phone),
+                                prefixIcon: Icon(Icons.phone, color: Colors.grey),
                                 border: InputBorder.none,
-                                contentPadding: EdgeInsets.symmetric(vertical: 12),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                hintText: 'Enter your mobile number',
                               ),
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 20),
 
                           // Password label
-                          const Padding(
-                            padding: EdgeInsets.only(left: 8, bottom: 4),
-                            child: Text(
-                              'Password',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                              ),
+                          const Text(
+                            'Password',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
                             ),
                           ),
+                          const SizedBox(height: 8),
 
                           // Password field
                           Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey.shade300),
                             ),
                             child: TextField(
                               controller: _passwordController,
                               obscureText: _obscurePassword,
                               decoration: InputDecoration(
-                                prefixIcon: const Icon(Icons.lock),
+                                prefixIcon: const Icon(Icons.lock, color: Colors.grey),
                                 suffixIcon: IconButton(
                                   icon: Icon(
-                                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                                    color: Colors.grey,
                                   ),
                                   onPressed: () {
                                     setState(() {
@@ -246,37 +262,40 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                   },
                                 ),
                                 border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                hintText: 'Enter your password',
                               ),
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 20),
 
                           // Confirm Password label
-                          const Padding(
-                            padding: EdgeInsets.only(left: 8, bottom: 4),
-                            child: Text(
-                              'Confirm Password',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                              ),
+                          const Text(
+                            'Confirm Password',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
                             ),
                           ),
+                          const SizedBox(height: 8),
 
                           // Confirm Password field
                           Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey.shade300),
                             ),
                             child: TextField(
                               controller: _confirmPasswordController,
                               obscureText: _obscureConfirmPassword,
                               decoration: InputDecoration(
-                                prefixIcon: const Icon(Icons.lock),
+                                prefixIcon: const Icon(Icons.lock, color: Colors.grey),
                                 suffixIcon: IconButton(
                                   icon: Icon(
-                                    _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                                    _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                                    color: Colors.grey,
                                   ),
                                   onPressed: () {
                                     setState(() {
@@ -285,41 +304,43 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                   },
                                 ),
                                 border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                hintText: 'Confirm your password',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+
+                          // Create button
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                // Implement registration functionality
+                                _register();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red.shade200,
+                                foregroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                elevation: 2,
+                              ),
+                              child: const Text(
+                                'Create Account',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
-
-                    // Create button
-                    SizedBox(
-                      width: 150,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          // Implement registration functionality
-                          _register();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                        ),
-                        child: const Text(
-                          'Create',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 32),
 
                     // Sign in link
                     Row(

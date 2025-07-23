@@ -56,6 +56,9 @@ flutter:
     - assets/app1_icon.png
     - assets/bg2_icon.jpg
     - assets/bg3_icon.jpg
+    - assets/bg4_icon.jpg
+    - assets/bg5_icon.jpg
+    - assets/bg6_icon.jpg
 
   # To add assets to your application, add an assets section, like this:
   # assets:

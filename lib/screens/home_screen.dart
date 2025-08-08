@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'profile_screen.dart';
 
 // Geofence model
 class Geofence {
@@ -467,7 +468,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           // Placeholder screens for navigation
           const Center(child: Text('Settings Screen')),
           const Center(child: Text('Messages Screen')),
-          const Center(child: Text('Profile Screen')),
+          const ProfileScreen(),
         ],
       ),
       bottomNavigationBar: Container(

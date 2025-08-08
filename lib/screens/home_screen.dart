@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 // Geofence model
 class Geofence {
@@ -46,11 +47,15 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   List<LatLng> _currentGeofencePoints = [];
   final TextEditingController _geofenceNameController = TextEditingController();
 
+  // Initialize local notifications
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initializeLocation();
+    _initializeNotifications(); // Initialize notifications
   }
 
   @override
@@ -65,6 +70,40 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       _checkLocationService();
     }
+  }
+
+  // Initialize notification plugin
+  Future<void> _initializeNotifications() async {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+    AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    final InitializationSettings initializationSettings =
+    InitializationSettings(android: initializationSettingsAndroid);
+
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  }
+
+  Future<void> _showNotification(String geofenceName, String action) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+    AndroidNotificationDetails(
+      'geofence_channel',
+      'Geofence Alerts',
+      channelDescription: 'Notification channel for geofence entry and exit alerts',
+      importance: Importance.max,
+      priority: Priority.high,
+      showWhen: false,
+    );
+
+    const NotificationDetails platformChannelSpecifics =
+    NotificationDetails(android: androidPlatformChannelSpecifics);
+
+    await flutterLocalNotificationsPlugin.show(
+      0,
+      '$action Geofence: $geofenceName',
+      'You have $action the geofence: $geofenceName',
+      platformChannelSpecifics,
+      payload: 'Geofence Notification',
+    );
   }
 
   Future<void> _initializeLocation() async {
@@ -189,6 +228,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
         if (isInside) {
           _showGeofenceAlert(geofence.name, "Entered", Colors.green);
+          _showNotification(geofence.name, "Entered");  // Push notification on entry
+        } else {
+          _showGeofenceAlert(geofence.name, "Exited", Colors.red);
+          _showNotification(geofence.name, "Exited");  // Push notification on exit
         }
       }
     }

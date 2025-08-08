@@ -4,6 +4,25 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+// Geofence model
+class Geofence {
+  final String id;
+  final String name;
+  final List<LatLng> points;
+  final Color color;
+  final DateTime createdAt;
+  bool isActive;
+
+  Geofence({
+    required this.id,
+    required this.name,
+    required this.points,
+    required this.color,
+    required this.createdAt,
+    this.isActive = true,
+  });
+}
+
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key}) : super(key: key);
 
@@ -21,6 +40,12 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   bool _isTrackingLocation = false;
   List<LatLng> _locationHistory = [];
 
+  // Geofence variables
+  List<Geofence> _geofences = [];
+  bool _isDrawingGeofence = false;
+  List<LatLng> _currentGeofencePoints = [];
+  final TextEditingController _geofenceNameController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -31,6 +56,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _geofenceNameController.dispose();
     super.dispose();
   }
 
@@ -146,8 +172,55 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             _locationHistory.removeAt(0);
           }
         });
+
+        // Check geofence status
+        _checkGeofenceStatus(position);
       });
     }
+  }
+
+  void _checkGeofenceStatus(Position position) {
+    for (var geofence in _geofences) {
+      if (geofence.isActive) {
+        bool isInside = _isPointInPolygon(
+          LatLng(position.latitude, position.longitude),
+          geofence.points,
+        );
+
+        if (isInside) {
+          _showGeofenceAlert(geofence.name, "Entered", Colors.green);
+        }
+      }
+    }
+  }
+
+  bool _isPointInPolygon(LatLng point, List<LatLng> polygon) {
+    if (polygon.length < 3) return false;
+
+    int intersectCount = 0;
+    for (int i = 0; i < polygon.length; i++) {
+      int j = (i + 1) % polygon.length;
+
+      if (((polygon[i].latitude <= point.latitude && point.latitude < polygon[j].latitude) ||
+          (polygon[j].latitude <= point.latitude && point.latitude < polygon[i].latitude)) &&
+          (point.longitude < (polygon[j].longitude - polygon[i].longitude) *
+              (point.latitude - polygon[i].latitude) /
+              (polygon[j].latitude - polygon[i].latitude) + polygon[i].longitude)) {
+        intersectCount++;
+      }
+    }
+
+    return (intersectCount % 2) == 1;
+  }
+
+  void _showGeofenceAlert(String geofenceName, String action, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$action geofence: $geofenceName'),
+        backgroundColor: color,
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   void _stopLocationTracking() {
@@ -163,6 +236,176 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         15.0,
       );
     }
+  }
+
+  void _startDrawingGeofence() {
+    setState(() {
+      _isDrawingGeofence = true;
+      _currentGeofencePoints.clear();
+    });
+  }
+
+  void _stopDrawingGeofence() {
+    if (_currentGeofencePoints.length >= 3) {
+      _showCreateGeofenceDialog();
+    } else {
+      setState(() {
+        _isDrawingGeofence = false;
+        _currentGeofencePoints.clear();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Geofence needs at least 3 points')),
+      );
+    }
+  }
+
+  void _showCreateGeofenceDialog() {
+    _geofenceNameController.clear();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create Geofence'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _geofenceNameController,
+              decoration: const InputDecoration(
+                labelText: 'Geofence Name',
+                hintText: 'Enter a name for this geofence',
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text('Points: ${_currentGeofencePoints.length}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _isDrawingGeofence = false;
+                _currentGeofencePoints.clear();
+              });
+              Navigator.pop(context);
+            },
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (_geofenceNameController.text.isNotEmpty) {
+                _createGeofence(_geofenceNameController.text);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _createGeofence(String name) {
+    final geofence = Geofence(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: name,
+      points: List.from(_currentGeofencePoints),
+      color: Colors.primaries[_geofences.length % Colors.primaries.length],
+      createdAt: DateTime.now(),
+    );
+
+    setState(() {
+      _geofences.add(geofence);
+      _isDrawingGeofence = false;
+      _currentGeofencePoints.clear();
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Geofence "$name" created successfully')),
+    );
+  }
+
+  void _onMapTap(TapPosition tapPosition, LatLng point) {
+    if (_isDrawingGeofence) {
+      setState(() {
+        _currentGeofencePoints.add(point);
+      });
+    }
+  }
+
+  void _showGeofencesList() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Geofences',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: _geofences.isEmpty
+                  ? const Center(child: Text('No geofences created yet'))
+                  : ListView.builder(
+                itemCount: _geofences.length,
+                itemBuilder: (context, index) {
+                  final geofence = _geofences[index];
+                  return Card(
+                    child: ListTile(
+                      leading: Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: geofence.color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      title: Text(geofence.name),
+                      subtitle: Text(
+                        '${geofence.points.length} points • ${geofence.isActive ? "Active" : "Inactive"}',
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Switch(
+                            value: geofence.isActive,
+                            onChanged: (value) {
+                              setState(() {
+                                geofence.isActive = value;
+                              });
+                            },
+                          ),
+                          IconButton(
+                            onPressed: () {
+                              setState(() {
+                                _geofences.removeAt(index);
+                              });
+                              Navigator.pop(context);
+                            },
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _onItemTapped(int index) {
@@ -284,6 +527,13 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               ),
               const Spacer(),
               IconButton(
+                onPressed: _showGeofencesList,
+                icon: Icon(
+                  Icons.layers,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              IconButton(
                 onPressed: () {
                   // Implement notifications
                 },
@@ -295,6 +545,26 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             ],
           ),
         ),
+
+        // Drawing instructions
+        if (_isDrawingGeofence)
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.orange.shade100,
+            child: Row(
+              children: [
+                Icon(Icons.info, color: Colors.orange.shade800),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text('Tap on the map to add points to your geofence'),
+                ),
+                TextButton(
+                  onPressed: _stopDrawingGeofence,
+                  child: const Text('Finish'),
+                ),
+              ],
+            ),
+          ),
 
         // Map Container
         Expanded(
@@ -324,6 +594,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                       zoom: 15.0,
                       minZoom: 10.0,
                       maxZoom: 18.0,
+                      onTap: _onMapTap,
                     ),
                     children: [
                       // Tile Layer
@@ -331,6 +602,58 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                         urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                         userAgentPackageName: 'com.example.safespot',
                       ),
+
+                      // Geofences Polygons
+                      PolygonLayer(
+                        polygons: [
+                          // Existing geofences
+                          ..._geofences.map((geofence) => Polygon(
+                            points: geofence.points,
+                            color: geofence.color.withOpacity(0.2),
+                            borderColor: geofence.color,
+                            borderStrokeWidth: 2.0,
+                          )),
+                          // Current drawing geofence
+                          if (_currentGeofencePoints.length >= 3)
+                            Polygon(
+                              points: _currentGeofencePoints,
+                              color: Colors.orange.withOpacity(0.2),
+                              borderColor: Colors.orange,
+                              borderStrokeWidth: 2.0,
+                            ),
+                        ],
+                      ),
+
+                      // Geofence markers for drawing
+                      if (_currentGeofencePoints.isNotEmpty)
+                        MarkerLayer(
+                          markers: _currentGeofencePoints
+                              .asMap()
+                              .entries
+                              .map((entry) => Marker(
+                            point: entry.value,
+                            builder: (context) => Container(
+                              width: 16,
+                              height: 16,
+                              decoration: BoxDecoration(
+                                color: Colors.orange,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${entry.key + 1}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ))
+                              .toList(),
+                        ),
 
                       // Location History Polyline
                       if (_locationHistory.length > 1)
@@ -423,6 +746,16 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                             color: _isTrackingLocation ? Colors.red : Colors.green,
                           ),
                         ),
+                        const SizedBox(height: 8),
+                        FloatingActionButton.small(
+                          heroTag: "draw_geofence",
+                          onPressed: _isDrawingGeofence ? _stopDrawingGeofence : _startDrawingGeofence,
+                          backgroundColor: _isDrawingGeofence ? Colors.orange.shade100 : Colors.white,
+                          child: Icon(
+                            _isDrawingGeofence ? Icons.stop : Icons.draw,
+                            color: _isDrawingGeofence ? Colors.orange : Colors.black54,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -461,6 +794,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                             ),
                             Text(
                               'History: ${_locationHistory.length} points',
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                            Text(
+                              'Geofences: ${_geofences.length}',
                               style: const TextStyle(fontSize: 10),
                             ),
                           ],

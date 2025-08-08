@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key}) : super(key: key);
@@ -7,15 +11,159 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   int _selectedIndex = 0;
+  final MapController _mapController = MapController();
 
-  // Sample data for map markers
-  final List<MapMarker> _markers = [
-    MapMarker(id: 1, title: "Safe Zone A", lat: 8.9511, lng: 125.5439, isActive: true),
-    MapMarker(id: 2, title: "Safe Zone B", lat: 8.9567, lng: 125.5401, isActive: true),
-    MapMarker(id: 3, title: "Alert Area", lat: 8.9489, lng: 125.5478, isActive: false),
-  ];
+  // Location tracking variables
+  Position? _currentPosition;
+  bool _isLocationServiceEnabled = false;
+  bool _isTrackingLocation = false;
+  List<LatLng> _locationHistory = [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _initializeLocation();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkLocationService();
+    }
+  }
+
+  Future<void> _initializeLocation() async {
+    await _requestLocationPermissions();
+    await _checkLocationService();
+    if (_isLocationServiceEnabled) {
+      await _getCurrentLocation();
+      _startLocationTracking();
+    }
+  }
+
+  Future<void> _requestLocationPermissions() async {
+    var status = await Permission.location.status;
+    if (status.isDenied) {
+      status = await Permission.location.request();
+    }
+
+    if (status.isPermanentlyDenied) {
+      openAppSettings();
+    }
+  }
+
+  Future<void> _checkLocationService() async {
+    bool isEnabled = await Geolocator.isLocationServiceEnabled();
+    setState(() {
+      _isLocationServiceEnabled = isEnabled;
+    });
+
+    if (!isEnabled) {
+      _showLocationServiceDialog();
+    }
+  }
+
+  void _showLocationServiceDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Location Services Disabled'),
+        content: const Text('Please enable location services to use the map features.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Geolocator.openLocationSettings();
+            },
+            child: const Text('Settings'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _getCurrentLocation() async {
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.whileInUse ||
+          permission == LocationPermission.always) {
+        Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+
+        setState(() {
+          _currentPosition = position;
+          _locationHistory.add(LatLng(position.latitude, position.longitude));
+        });
+
+        // Center map on current location
+        _mapController.move(
+          LatLng(position.latitude, position.longitude),
+          15.0,
+        );
+      }
+    } catch (e) {
+      print('Error getting current location: $e');
+    }
+  }
+
+  void _startLocationTracking() {
+    if (!_isTrackingLocation) {
+      setState(() {
+        _isTrackingLocation = true;
+      });
+
+      const LocationSettings locationSettings = LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 10, // Update every 10 meters
+      );
+
+      Geolocator.getPositionStream(locationSettings: locationSettings)
+          .listen((Position position) {
+        setState(() {
+          _currentPosition = position;
+          _locationHistory.add(LatLng(position.latitude, position.longitude));
+
+          // Keep only last 100 locations to prevent memory issues
+          if (_locationHistory.length > 100) {
+            _locationHistory.removeAt(0);
+          }
+        });
+      });
+    }
+  }
+
+  void _stopLocationTracking() {
+    setState(() {
+      _isTrackingLocation = false;
+    });
+  }
+
+  void _centerMapOnCurrentLocation() {
+    if (_currentPosition != null) {
+      _mapController.move(
+        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+        15.0,
+      );
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -30,9 +178,10 @@ class _MainScreenState extends State<MainScreen> {
         index: _selectedIndex,
         children: [
           _buildHomeScreen(),
-          _buildSettingsScreen(),
-          _buildMessageScreen(),
-          _buildProfileScreen(),
+          // Placeholder screens for navigation
+          const Center(child: Text('Settings Screen')),
+          const Center(child: Text('Messages Screen')),
+          const Center(child: Text('Profile Screen')),
         ],
       ),
       bottomNavigationBar: Container(
@@ -111,13 +260,27 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              Text(
-                'SafeSpot',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red.shade300,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'SafeSpot',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red.shade300,
+                    ),
+                  ),
+                  if (_currentPosition != null)
+                    Text(
+                      'Lat: ${_currentPosition!.latitude.toStringAsFixed(4)}, '
+                          'Lng: ${_currentPosition!.longitude.toStringAsFixed(4)}',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                ],
               ),
               const Spacer(),
               IconButton(
@@ -151,23 +314,62 @@ class _MainScreenState extends State<MainScreen> {
               borderRadius: BorderRadius.circular(16),
               child: Stack(
                 children: [
-                  // Map placeholder (you'll replace this with actual map widget)
-                  Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Colors.blue.shade100,
-                          Colors.green.shade50,
-                        ],
+                  // Flutter Map
+                  FlutterMap(
+                    mapController: _mapController,
+                    options: MapOptions(
+                      center: _currentPosition != null
+                          ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
+                          : LatLng(8.9511, 125.5439), // Default to Cagayan de Oro
+                      zoom: 15.0,
+                      minZoom: 10.0,
+                      maxZoom: 18.0,
+                    ),
+                    children: [
+                      // Tile Layer
+                      TileLayer(
+                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.example.safespot',
                       ),
-                    ),
-                    child: CustomPaint(
-                      painter: MapPainter(_markers),
-                    ),
+
+                      // Location History Polyline
+                      if (_locationHistory.length > 1)
+                        PolylineLayer(
+                          polylines: [
+                            Polyline(
+                              points: _locationHistory,
+                              strokeWidth: 3.0,
+                              color: Colors.blue.withOpacity(0.7),
+                            ),
+                          ],
+                        ),
+
+                      // Current Location Marker
+                      if (_currentPosition != null)
+                        MarkerLayer(
+                          markers: [
+                            Marker(
+                              point: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                              builder: (context) => Container(
+                                width: 20,
+                                height: 20,
+                                decoration: BoxDecoration(
+                                  color: Colors.blue,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 3),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.3),
+                                      blurRadius: 5,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
                   ),
 
                   // Map controls
@@ -179,7 +381,8 @@ class _MainScreenState extends State<MainScreen> {
                         FloatingActionButton.small(
                           heroTag: "zoom_in",
                           onPressed: () {
-                            // Implement zoom in
+                            var currentZoom = _mapController.zoom;
+                            _mapController.move(_mapController.center, currentZoom + 1);
                           },
                           backgroundColor: Colors.white,
                           child: const Icon(Icons.add, color: Colors.black54),
@@ -188,7 +391,8 @@ class _MainScreenState extends State<MainScreen> {
                         FloatingActionButton.small(
                           heroTag: "zoom_out",
                           onPressed: () {
-                            // Implement zoom out
+                            var currentZoom = _mapController.zoom;
+                            _mapController.move(_mapController.center, currentZoom - 1);
                           },
                           backgroundColor: Colors.white,
                           child: const Icon(Icons.remove, color: Colors.black54),
@@ -196,65 +400,126 @@ class _MainScreenState extends State<MainScreen> {
                         const SizedBox(height: 8),
                         FloatingActionButton.small(
                           heroTag: "my_location",
+                          onPressed: _centerMapOnCurrentLocation,
+                          backgroundColor: _isTrackingLocation ? Colors.blue.shade100 : Colors.white,
+                          child: Icon(
+                            Icons.my_location,
+                            color: _isTrackingLocation ? Colors.blue : Colors.black54,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        FloatingActionButton.small(
+                          heroTag: "tracking_toggle",
                           onPressed: () {
-                            // Center map on user location
+                            if (_isTrackingLocation) {
+                              _stopLocationTracking();
+                            } else {
+                              _startLocationTracking();
+                            }
                           },
-                          backgroundColor: Colors.white,
-                          child: const Icon(Icons.my_location, color: Colors.black54),
+                          backgroundColor: _isTrackingLocation ? Colors.red.shade100 : Colors.green.shade100,
+                          child: Icon(
+                            _isTrackingLocation ? Icons.pause : Icons.play_arrow,
+                            color: _isTrackingLocation ? Colors.red : Colors.green,
+                          ),
                         ),
                       ],
                     ),
                   ),
 
-                  // Legend
-                  Positioned(
-                    bottom: 16,
-                    left: 16,
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 12,
-                                height: 12,
-                                decoration: const BoxDecoration(
-                                  color: Colors.green,
-                                  shape: BoxShape.circle,
-                                ),
+                  // Location info overlay
+                  if (_currentPosition != null)
+                    Positioned(
+                      bottom: 16,
+                      left: 16,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Current Location',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade700,
                               ),
-                              const SizedBox(width: 8),
-                              const Text("Safe Zones", style: TextStyle(fontSize: 12)),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 12,
-                                height: 12,
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              const Text("Alert Areas", style: TextStyle(fontSize: 12)),
-                            ],
-                          ),
-                        ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Accuracy: ${_currentPosition!.accuracy.toStringAsFixed(1)}m',
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                            Text(
+                              'Speed: ${_currentPosition!.speed.toStringAsFixed(1)}m/s',
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                            Text(
+                              'History: ${_locationHistory.length} points',
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
+
+                  // No location overlay
+                  if (_currentPosition == null && _isLocationServiceEnabled)
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.black.withOpacity(0.3),
+                        child: const Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircularProgressIndicator(color: Colors.white),
+                              SizedBox(height: 16),
+                              Text(
+                                'Getting your location...',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  // Location disabled overlay
+                  if (!_isLocationServiceEnabled)
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.black.withOpacity(0.5),
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.location_off,
+                                color: Colors.white,
+                                size: 48,
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Location services are disabled',
+                                style: TextStyle(color: Colors.white, fontSize: 16),
+                              ),
+                              const SizedBox(height: 8),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Geolocator.openLocationSettings();
+                                },
+                                child: const Text('Enable Location'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -287,10 +552,16 @@ class _MainScreenState extends State<MainScreen> {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    // Implement report incident
+                    // Clear location history
+                    setState(() {
+                      _locationHistory.clear();
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Location history cleared')),
+                    );
                   },
-                  icon: const Icon(Icons.report, color: Colors.black),
-                  label: const Text("Report"),
+                  icon: const Icon(Icons.clear_all, color: Colors.black),
+                  label: const Text("Clear History"),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.grey.shade200,
                     foregroundColor: Colors.black,
@@ -308,302 +579,4 @@ class _MainScreenState extends State<MainScreen> {
       ],
     );
   }
-
-  Widget _buildSettingsScreen() {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: Colors.black,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _buildSettingsTile(
-            icon: Icons.notifications,
-            title: 'Notifications',
-            subtitle: 'Manage your alerts and notifications',
-            onTap: () {},
-          ),
-          _buildSettingsTile(
-            icon: Icons.location_on,
-            title: 'Location Services',
-            subtitle: 'GPS and location permissions',
-            onTap: () {},
-          ),
-          _buildSettingsTile(
-            icon: Icons.security,
-            title: 'Privacy & Security',
-            subtitle: 'Account security settings',
-            onTap: () {},
-          ),
-          _buildSettingsTile(
-            icon: Icons.help,
-            title: 'Help & Support',
-            subtitle: 'Get help and contact support',
-            onTap: () {},
-          ),
-          _buildSettingsTile(
-            icon: Icons.info,
-            title: 'About',
-            subtitle: 'App version and information',
-            onTap: () {},
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSettingsTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.red.shade300),
-        title: Text(title),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
-      ),
-    );
-  }
-
-  Widget _buildMessageScreen() {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Messages'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: Colors.black,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _buildMessageTile(
-            title: 'Emergency Alert System',
-            message: 'Safety alert in your area',
-            time: '2 min ago',
-            isUnread: true,
-          ),
-          _buildMessageTile(
-            title: 'Community Update',
-            message: 'New safe zone established nearby',
-            time: '1 hour ago',
-            isUnread: false,
-          ),
-          _buildMessageTile(
-            title: 'System Notification',
-            message: 'Your location services are active',
-            time: '3 hours ago',
-            isUnread: false,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMessageTile({
-    required String title,
-    required String message,
-    required String time,
-    required bool isUnread,
-  }) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: isUnread ? Colors.red.shade300 : Colors.grey.shade300,
-          child: Icon(
-            Icons.message,
-            color: Colors.white,
-            size: 20,
-          ),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-        subtitle: Text(message),
-        trailing: Text(
-          time,
-          style: TextStyle(
-            color: Colors.grey.shade600,
-            fontSize: 12,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileScreen() {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: Colors.black,
-      ),
-      body: Column(
-        children: [
-          const SizedBox(height: 20),
-          CircleAvatar(
-            radius: 50,
-            backgroundColor: Colors.red.shade100,
-            child: Icon(
-              Icons.person,
-              size: 50,
-              color: Colors.red.shade300,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'John Doe',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const Text(
-            'john.doe@email.com',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey,
-            ),
-          ),
-          const SizedBox(height: 30),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                _buildProfileOption(
-                  icon: Icons.edit,
-                  title: 'Edit Profile',
-                  onTap: () {},
-                ),
-                _buildProfileOption(
-                  icon: Icons.history,
-                  title: 'Activity History',
-                  onTap: () {},
-                ),
-                _buildProfileOption(
-                  icon: Icons.shield,
-                  title: 'Emergency Contacts',
-                  onTap: () {},
-                ),
-                _buildProfileOption(
-                  icon: Icons.logout,
-                  title: 'Logout',
-                  onTap: () {
-                    // Implement logout functionality
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProfileOption({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.red.shade300),
-        title: Text(title),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
-      ),
-    );
-  }
-}
-
-// Data model for map markers
-class MapMarker {
-  final int id;
-  final String title;
-  final double lat;
-  final double lng;
-  final bool isActive;
-
-  MapMarker({
-    required this.id,
-    required this.title,
-    required this.lat,
-    required this.lng,
-    required this.isActive,
-  });
-}
-
-// Custom painter for the map visualization
-class MapPainter extends CustomPainter {
-  final List<MapMarker> markers;
-
-  MapPainter(this.markers);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final gridPaint = Paint()
-      ..color = Colors.grey.withOpacity(0.3)
-      ..strokeWidth = 1;
-
-    // Draw grid lines
-    for (int i = 0; i <= 10; i++) {
-      double x = (size.width / 10) * i;
-      double y = (size.height / 10) * i;
-
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
-    }
-
-    // Draw markers
-    for (var marker in markers) {
-      final markerPaint = Paint()
-        ..color = marker.isActive ? Colors.green : Colors.red;
-
-      double x = (marker.lng - 125.530) * 2000 + size.width * 0.3;
-      double y = (8.960 - marker.lat) * 2000 + size.height * 0.3;
-
-      canvas.drawCircle(Offset(x, y), 8, markerPaint);
-
-      // Draw marker border
-      final borderPaint = Paint()
-        ..color = Colors.white
-        ..strokeWidth = 2
-        ..style = PaintingStyle.stroke;
-
-      canvas.drawCircle(Offset(x, y), 8, borderPaint);
-    }
-
-    // Draw roads/paths
-    final roadPaint = Paint()
-      ..color = Colors.grey.shade400
-      ..strokeWidth = 3;
-
-    canvas.drawLine(
-      Offset(size.width * 0.1, size.height * 0.5),
-      Offset(size.width * 0.9, size.height * 0.5),
-      roadPaint,
-    );
-
-    canvas.drawLine(
-      Offset(size.width * 0.5, size.height * 0.1),
-      Offset(size.width * 0.5, size.height * 0.9),
-      roadPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

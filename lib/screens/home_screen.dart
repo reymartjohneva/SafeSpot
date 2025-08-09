@@ -39,6 +39,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   Position? _currentPosition;
   bool _isLocationServiceEnabled = false;
   bool _isTrackingLocation = false;
+  bool _isGettingLocation = false;
   List<LatLng> _locationHistory = [];
 
   // Geofence variables
@@ -64,16 +65,42 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _checkLocationService();
+      _reinitializeLocation();
+    }
+  }
+
+  Future<void> _reinitializeLocation() async {
+    // Check if location service was enabled while app was in background
+    bool wasLocationEnabled = _isLocationServiceEnabled;
+    await _checkLocationService();
+
+    // If location service was just enabled, reinitialize everything
+    if (!wasLocationEnabled && _isLocationServiceEnabled) {
+      await _initializeLocation();
     }
   }
 
   Future<void> _initializeLocation() async {
-    await _requestLocationPermissions();
-    await _checkLocationService();
-    if (_isLocationServiceEnabled) {
-      await _getCurrentLocation();
-      _startLocationTracking();
+    setState(() {
+      _isGettingLocation = true;
+    });
+
+    try {
+      await _requestLocationPermissions();
+      await _checkLocationService();
+
+      if (_isLocationServiceEnabled) {
+        await _getCurrentLocation();
+        if (_currentPosition != null) {
+          _startLocationTracking();
+        }
+      }
+    } catch (e) {
+      print('Error initializing location: $e');
+    } finally {
+      setState(() {
+        _isGettingLocation = false;
+      });
     }
   }
 
@@ -85,6 +112,13 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
     if (status.isPermanentlyDenied) {
       openAppSettings();
+      return;
+    }
+
+    // Also check Geolocator permissions
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
     }
   }
 
@@ -94,7 +128,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       _isLocationServiceEnabled = isEnabled;
     });
 
-    if (!isEnabled) {
+    if (!isEnabled && mounted) {
       _showLocationServiceDialog();
     }
   }
@@ -123,36 +157,55 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _getCurrentLocation() async {
+    if (!_isLocationServiceEnabled) return;
+
     try {
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
 
+      if (permission == LocationPermission.deniedForever) {
+        print('Location permissions are permanently denied');
+        return;
+      }
+
       if (permission == LocationPermission.whileInUse ||
           permission == LocationPermission.always) {
+
         Position position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 10), // Add timeout
         );
 
-        setState(() {
-          _currentPosition = position;
-          _locationHistory.add(LatLng(position.latitude, position.longitude));
-        });
+        if (mounted) {
+          setState(() {
+            _currentPosition = position;
+            _locationHistory.add(LatLng(position.latitude, position.longitude));
+          });
 
-        // Center map on current location
-        _mapController.move(
-          LatLng(position.latitude, position.longitude),
-          15.0,
-        );
+          // Center map on current location
+          _mapController.move(
+            LatLng(position.latitude, position.longitude),
+            15.0,
+          );
+        }
       }
     } catch (e) {
       print('Error getting current location: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to get location: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
   void _startLocationTracking() {
-    if (!_isTrackingLocation) {
+    if (!_isTrackingLocation && _isLocationServiceEnabled) {
       setState(() {
         _isTrackingLocation = true;
       });
@@ -163,20 +216,32 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       );
 
       Geolocator.getPositionStream(locationSettings: locationSettings)
-          .listen((Position position) {
-        setState(() {
-          _currentPosition = position;
-          _locationHistory.add(LatLng(position.latitude, position.longitude));
+          .listen(
+            (Position position) {
+          if (mounted) {
+            setState(() {
+              _currentPosition = position;
+              _locationHistory.add(LatLng(position.latitude, position.longitude));
 
-          // Keep only last 100 locations to prevent memory issues
-          if (_locationHistory.length > 100) {
-            _locationHistory.removeAt(0);
+              // Keep only last 100 locations to prevent memory issues
+              if (_locationHistory.length > 100) {
+                _locationHistory.removeAt(0);
+              }
+            });
+
+            // Check geofence status
+            _checkGeofenceStatus(position);
           }
-        });
-
-        // Check geofence status
-        _checkGeofenceStatus(position);
-      });
+        },
+        onError: (error) {
+          print('Location stream error: $error');
+          if (mounted) {
+            setState(() {
+              _isTrackingLocation = false;
+            });
+          }
+        },
+      );
     }
   }
 
@@ -217,13 +282,15 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   void _showGeofenceAlert(String geofenceName, String action, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$action geofence: $geofenceName'),
-        backgroundColor: color,
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$action geofence: $geofenceName'),
+          backgroundColor: color,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   void _stopLocationTracking() {
@@ -238,6 +305,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
         15.0,
       );
+    } else if (_isLocationServiceEnabled) {
+      // Try to get location again
+      _getCurrentLocation();
     }
   }
 
@@ -417,6 +487,25 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     });
   }
 
+  // Manual refresh function
+  Future<void> _refreshLocation() async {
+    setState(() {
+      _isGettingLocation = true;
+    });
+
+    await _checkLocationService();
+    if (_isLocationServiceEnabled) {
+      await _getCurrentLocation();
+      if (_currentPosition != null && !_isTrackingLocation) {
+        _startLocationTracking();
+      }
+    }
+
+    setState(() {
+      _isGettingLocation = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -506,34 +595,43 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 ),
               ),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'SafeSpot',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red.shade300,
-                    ),
-                  ),
-                  if (_currentPosition != null)
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      'Lat: ${_currentPosition!.latitude.toStringAsFixed(4)}, '
-                          'Lng: ${_currentPosition!.longitude.toStringAsFixed(4)}',
+                      'SafeSpot',
                       style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.grey.shade600,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red.shade300,
                       ),
                     ),
-                ],
+                    if (_currentPosition != null)
+                      Text(
+                        'Lat: ${_currentPosition!.latitude.toStringAsFixed(4)}, '
+                            'Lng: ${_currentPosition!.longitude.toStringAsFixed(4)}',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                  ],
+                ),
               ),
-              const Spacer(),
               IconButton(
                 onPressed: _showGeofencesList,
                 icon: Icon(
                   Icons.layers,
                   color: Colors.grey.shade700,
+                ),
+              ),
+              // Add refresh button
+              IconButton(
+                onPressed: _isGettingLocation ? null : _refreshLocation,
+                icon: Icon(
+                  Icons.refresh,
+                  color: _isGettingLocation ? Colors.grey : Colors.grey.shade700,
                 ),
               ),
             ],
@@ -661,29 +759,83 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                           ],
                         ),
 
+                      // Current Location Marker with accuracy circle
+                      if (_currentPosition != null)
+                        CircleLayer(
+                          circles: [
+                            // Accuracy circle
+                            CircleMarker(
+                              point: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                              radius: _currentPosition!.accuracy,
+                              useRadiusInMeter: true,
+                              color: Colors.blue.withOpacity(0.1),
+                              borderColor: Colors.blue.withOpacity(0.3),
+                              borderStrokeWidth: 1,
+                            ),
+                          ],
+                        ),
+
                       // Current Location Marker
                       if (_currentPosition != null)
                         MarkerLayer(
                           markers: [
                             Marker(
                               point: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                              width: 40,
+                              height: 40,
                               builder: (context) => Container(
-                                width: 20,
-                                height: 20,
+                                width: 40,
+                                height: 40,
                                 decoration: BoxDecoration(
-                                  color: Colors.blue,
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 3),
+                                  color: Colors.white,
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.black.withOpacity(0.3),
-                                      blurRadius: 5,
+                                      blurRadius: 6,
                                       offset: const Offset(0, 2),
                                     ),
                                   ],
                                 ),
+                                child: Container(
+                                  margin: const EdgeInsets.all(3),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.blue.shade600,
+                                    border: Border.all(color: Colors.white, width: 2),
+                                  ),
+                                  child: Container(
+                                    margin: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
+                            // Direction indicator (if speed > 1 m/s)
+                            if (_currentPosition!.speed > 1.0)
+                              Marker(
+                                point: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                                width: 60,
+                                height: 60,
+                                builder: (context) => Transform.rotate(
+                                  angle: (_currentPosition!.heading * 3.141592653589793) / 180,
+                                  child: Icon(
+                                    Icons.navigation,
+                                    color: Colors.blue.shade700,
+                                    size: 30,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black.withOpacity(0.5),
+                                        offset: const Offset(1, 1),
+                                        blurRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                     ],
@@ -799,8 +951,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                       ),
                     ),
 
-                  // No location overlay
-                  if (_currentPosition == null && _isLocationServiceEnabled)
+                  // Loading overlay for getting location
+                  if (_isGettingLocation && _isLocationServiceEnabled)
                     Positioned.fill(
                       child: Container(
                         color: Colors.black.withOpacity(0.3),
@@ -845,6 +997,14 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                                   Geolocator.openLocationSettings();
                                 },
                                 child: const Text('Enable Location'),
+                              ),
+                              const SizedBox(height: 8),
+                              TextButton(
+                                onPressed: _refreshLocation,
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                ),
+                                child: const Text('Check Again'),
                               ),
                             ],
                           ),

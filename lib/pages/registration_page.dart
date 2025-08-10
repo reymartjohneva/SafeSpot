@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'onboarding_page.dart'; // Import the onboarding page
+import '../services/auth_service.dart'; // Import the auth service
 
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({Key? key}) : super(key: key);
@@ -45,22 +46,33 @@ class _RegistrationPageState extends State<RegistrationPage> {
     print('Form data: $firstName $lastName, $email, $mobile'); // Debug print
 
     // Validate form
-    if (firstName.isEmpty || lastName.isEmpty || email.isEmpty ||
-        mobile.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+    if (firstName.isEmpty ||
+        lastName.isEmpty ||
+        email.isEmpty ||
+        mobile.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
       print('Empty fields validation failed'); // Debug print
       _showSnackBar('All fields are required', Colors.red);
       return;
     }
 
-    // Email validation
-    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+    // Email validation using AuthService
+    if (!AuthService.isValidEmail(email)) {
       print('Email validation failed'); // Debug print
       _showSnackBar('Please enter a valid email address', Colors.red);
       return;
     }
 
-    // Password length validation
-    if (password.length < 6) {
+    // Mobile validation using AuthService
+    if (!AuthService.isValidMobile(mobile)) {
+      print('Mobile validation failed'); // Debug print
+      _showSnackBar('Please enter a valid mobile number', Colors.red);
+      return;
+    }
+
+    // Password validation using AuthService
+    if (!AuthService.isValidPassword(password)) {
       print('Password length validation failed'); // Debug print
       _showSnackBar('Password must be at least 6 characters', Colors.red);
       return;
@@ -73,29 +85,48 @@ class _RegistrationPageState extends State<RegistrationPage> {
       return;
     }
 
-    print('All validations passed, starting registration process'); // Debug print
+    print(
+      'All validations passed, starting registration process',
+    ); // Debug print
 
     // Show loading state
     setState(() {
       _isLoading = true;
     });
 
-    // Simulate API call delay
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      // Call AuthService to register user
+      final AuthResult result = await AuthService.register(
+        email: email,
+        password: password,
+        firstName: firstName,
+        lastName: lastName,
+        mobile: mobile,
+      );
 
-    // Registration successful
-    setState(() {
-      _isLoading = false;
-    });
+      setState(() {
+        _isLoading = false;
+      });
 
-    _showSnackBar('Account created successfully!', Colors.green);
+      if (result.success) {
+        _showSnackBar(result.message, Colors.green);
 
-    // Navigate to onboarding page after successful registration
-    await Future.delayed(const Duration(seconds: 1));
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const OnboardingPage()),
-    );
+        // Navigate to onboarding page after successful registration
+        await Future.delayed(const Duration(seconds: 1));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const OnboardingPage()),
+        );
+      } else {
+        _showSnackBar(result.message, Colors.red);
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      _showSnackBar('Registration failed. Please try again.', Colors.red);
+      print('Registration error: $e');
+    }
   }
 
   void _showSnackBar(String message, Color backgroundColor) {
@@ -335,7 +366,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
                             obscureText: _obscureConfirmPassword,
                             onToggleVisibility: () {
                               setState(() {
-                                _obscureConfirmPassword = !_obscureConfirmPassword;
+                                _obscureConfirmPassword =
+                                    !_obscureConfirmPassword;
                               });
                             },
                           ),
@@ -360,9 +392,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
                           ),
                         ),
                         TextButton(
-                          onPressed: _isLoading ? null : () {
-                            Navigator.pop(context);
-                          },
+                          onPressed:
+                              _isLoading
+                                  ? null
+                                  : () {
+                                    Navigator.pop(context);
+                                  },
                           child: Text(
                             'Sign In',
                             style: TextStyle(
@@ -410,10 +445,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.1),
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.3),
-              width: 1,
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
           ),
           child: TextField(
             controller: controller,
@@ -423,11 +455,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
             decoration: InputDecoration(
               prefixIcon: Icon(icon, color: Colors.white.withOpacity(0.7)),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              hintText: hintText ?? 'Enter your ${label.toLowerCase()}',
-              hintStyle: TextStyle(
-                color: Colors.white.withOpacity(0.5),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 16,
               ),
+              hintText: hintText ?? 'Enter your ${label.toLowerCase()}',
+              hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
             ),
           ),
         ),
@@ -457,10 +490,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.1),
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.3),
-              width: 1,
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
           ),
           child: TextField(
             controller: controller,
@@ -468,7 +498,10 @@ class _RegistrationPageState extends State<RegistrationPage> {
             enabled: !_isLoading,
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
-              prefixIcon: Icon(Icons.lock_outline, color: Colors.white.withOpacity(0.7)),
+              prefixIcon: Icon(
+                Icons.lock_outline,
+                color: Colors.white.withOpacity(0.7),
+              ),
               suffixIcon: IconButton(
                 icon: Icon(
                   obscureText ? Icons.visibility_off : Icons.visibility,
@@ -477,11 +510,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 onPressed: _isLoading ? null : onToggleVisibility,
               ),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              hintText: 'Enter your ${label.toLowerCase()}',
-              hintStyle: TextStyle(
-                color: Colors.white.withOpacity(0.5),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 16,
               ),
+              hintText: 'Enter your ${label.toLowerCase()}',
+              hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
             ),
           ),
         ),
@@ -497,16 +531,18 @@ class _RegistrationPageState extends State<RegistrationPage> {
         gradient: LinearGradient(
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
-          colors: _isLoading
-              ? [Colors.grey.shade400, Colors.grey.shade500]
-              : [Colors.green.shade400, Colors.green.shade600],
+          colors:
+              _isLoading
+                  ? [Colors.grey.shade400, Colors.grey.shade500]
+                  : [Colors.green.shade400, Colors.green.shade600],
         ),
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: _isLoading
-                ? Colors.grey.withOpacity(0.3)
-                : Colors.green.withOpacity(0.3),
+            color:
+                _isLoading
+                    ? Colors.grey.withOpacity(0.3)
+                    : Colors.green.withOpacity(0.3),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -521,23 +557,24 @@ class _RegistrationPageState extends State<RegistrationPage> {
             borderRadius: BorderRadius.circular(15),
           ),
         ),
-        child: _isLoading
-            ? const SizedBox(
-          height: 24,
-          width: 24,
-          child: CircularProgressIndicator(
-            strokeWidth: 2.5,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-          ),
-        )
-            : const Text(
-          'Create Account',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
+        child:
+            _isLoading
+                ? const SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+                : const Text(
+                  'Create Account',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
       ),
     );
   }

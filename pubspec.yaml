@@ -38,6 +38,7 @@ dependencies:
   latlong2: ^0.8.1
   geolocator: ^10.1.0
   permission_handler: ^11.0.1
+  supabase_flutter: ^2.9.1
 
 dev_dependencies:
   flutter_test:

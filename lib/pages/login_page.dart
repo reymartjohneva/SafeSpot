@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'registration_page.dart'; // Import the registration page
 import '../screens/home_screen.dart'; // Import the main screen from screens directory
+import '../services/auth_service.dart'; // Import your AuthService
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -39,15 +40,14 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    // Email validation - Fixed the regex string
-    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+    // Use AuthService validation methods
+    if (!AuthService.isValidEmail(email)) {
       print('Email validation failed'); // Debug print
       _showSnackBar('Please enter a valid email address', Colors.red);
       return;
     }
 
-    // Password length validation
-    if (password.length < 6) {
+    if (!AuthService.isValidPassword(password)) {
       print('Password length validation failed'); // Debug print
       _showSnackBar('Password must be at least 6 characters', Colors.red);
       return;
@@ -60,30 +60,76 @@ class _LoginPageState extends State<LoginPage> {
       _isLoading = true;
     });
 
-    // Simulate API call delay (replace with actual authentication)
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      // Use AuthService to sign in
+      final AuthResult result = await AuthService.signIn(
+        email: email,
+        password: password,
+      );
 
-    // For demo purposes, accept any valid email/password combination
-    // Replace this with your actual authentication logic
-    if (email.isNotEmpty && password.isNotEmpty) {
-      print('Login successful, navigating to MainScreen'); // Debug print
-
-      // Login successful
       setState(() {
         _isLoading = false;
       });
 
-      _showSnackBar('Login successful!', Colors.green);
+      if (result.success) {
+        print('Login successful, navigating to MainScreen'); // Debug print
+        _showSnackBar(result.message, Colors.green);
 
-      // Navigate to MainScreen using named route
-      Navigator.pushReplacementNamed(context, '/home');
-    } else {
-      print('Login failed'); // Debug print
-      // Login failed
+        // Navigate to MainScreen using named route
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        print('Login failed: ${result.message}'); // Debug print
+        _showSnackBar(result.message, Colors.red);
+      }
+    } catch (e) {
+      print('Unexpected error during login: $e'); // Debug print
       setState(() {
         _isLoading = false;
       });
-      _showSnackBar('Invalid email or password', Colors.red);
+      _showSnackBar(
+        'An unexpected error occurred. Please try again.',
+        Colors.red,
+      );
+    }
+  }
+
+  void _handleForgotPassword() async {
+    String email = _emailController.text.trim();
+
+    if (email.isEmpty) {
+      _showSnackBar('Please enter your email address first', Colors.orange);
+      return;
+    }
+
+    if (!AuthService.isValidEmail(email)) {
+      _showSnackBar('Please enter a valid email address', Colors.red);
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final AuthResult result = await AuthService.resetPassword(email: email);
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (result.success) {
+        _showSnackBar(result.message, Colors.green);
+      } else {
+        _showSnackBar(result.message, Colors.red);
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      _showSnackBar(
+        'Failed to send reset email. Please try again.',
+        Colors.red,
+      );
     }
   }
 
@@ -262,9 +308,8 @@ class _LoginPageState extends State<LoginPage> {
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
-                              onPressed: _isLoading ? null : () {
-                                _showSnackBar('Forgot password feature coming soon!', Colors.blue);
-                              },
+                              onPressed:
+                                  _isLoading ? null : _handleForgotPassword,
                               child: Text(
                                 'Forgot Password?',
                                 style: TextStyle(
@@ -296,12 +341,19 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         TextButton(
-                          onPressed: _isLoading ? null : () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => const RegistrationPage()),
-                            );
-                          },
+                          onPressed:
+                              _isLoading
+                                  ? null
+                                  : () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (context) =>
+                                                const RegistrationPage(),
+                                      ),
+                                    );
+                                  },
                           child: Text(
                             'Sign Up',
                             style: TextStyle(
@@ -346,10 +398,7 @@ class _LoginPageState extends State<LoginPage> {
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.1),
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.3),
-              width: 1,
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
           ),
           child: TextField(
             controller: controller,
@@ -359,11 +408,12 @@ class _LoginPageState extends State<LoginPage> {
             decoration: InputDecoration(
               prefixIcon: Icon(icon, color: Colors.white.withOpacity(0.7)),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              hintText: 'Enter your ${label.toLowerCase()}',
-              hintStyle: TextStyle(
-                color: Colors.white.withOpacity(0.5),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 16,
               ),
+              hintText: 'Enter your ${label.toLowerCase()}',
+              hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
             ),
           ),
         ),
@@ -388,10 +438,7 @@ class _LoginPageState extends State<LoginPage> {
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.1),
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.3),
-              width: 1,
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
           ),
           child: TextField(
             controller: _passwordController,
@@ -399,24 +446,31 @@ class _LoginPageState extends State<LoginPage> {
             enabled: !_isLoading,
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
-              prefixIcon: Icon(Icons.lock_outline, color: Colors.white.withOpacity(0.7)),
+              prefixIcon: Icon(
+                Icons.lock_outline,
+                color: Colors.white.withOpacity(0.7),
+              ),
               suffixIcon: IconButton(
                 icon: Icon(
                   _obscurePassword ? Icons.visibility_off : Icons.visibility,
                   color: Colors.white.withOpacity(0.7),
                 ),
-                onPressed: _isLoading ? null : () {
-                  setState(() {
-                    _obscurePassword = !_obscurePassword;
-                  });
-                },
+                onPressed:
+                    _isLoading
+                        ? null
+                        : () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
               ),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              hintText: 'Enter your password',
-              hintStyle: TextStyle(
-                color: Colors.white.withOpacity(0.5),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 16,
               ),
+              hintText: 'Enter your password',
+              hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
             ),
           ),
         ),
@@ -432,16 +486,18 @@ class _LoginPageState extends State<LoginPage> {
         gradient: LinearGradient(
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
-          colors: _isLoading
-              ? [Colors.grey.shade400, Colors.grey.shade500]
-              : [Colors.green.shade400, Colors.green.shade600],
+          colors:
+              _isLoading
+                  ? [Colors.grey.shade400, Colors.grey.shade500]
+                  : [Colors.green.shade400, Colors.green.shade600],
         ),
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: _isLoading
-                ? Colors.grey.withOpacity(0.3)
-                : Colors.green.withOpacity(0.3),
+            color:
+                _isLoading
+                    ? Colors.grey.withOpacity(0.3)
+                    : Colors.green.withOpacity(0.3),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -456,23 +512,24 @@ class _LoginPageState extends State<LoginPage> {
             borderRadius: BorderRadius.circular(15),
           ),
         ),
-        child: _isLoading
-            ? const SizedBox(
-          height: 24,
-          width: 24,
-          child: CircularProgressIndicator(
-            strokeWidth: 2.5,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-          ),
-        )
-            : const Text(
-          'Login',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
+        child:
+            _isLoading
+                ? const SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+                : const Text(
+                  'Login',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
       ),
     );
   }

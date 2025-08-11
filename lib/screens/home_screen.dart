@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'profile_screen.dart';
+import 'message_screen.dart';
 
 // Geofence model
 class Geofence {
@@ -515,7 +516,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           _buildHomeScreen(),
           // Placeholder screens for navigation
           const Center(child: Text('Settings Screen')),
-          const Center(child: Text('Messages Screen')),
+          const MessageScreen(),
           const ProfileScreen(),
         ],
       ),
@@ -1014,56 +1015,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 ],
               ),
             ),
-          ),
-        ),
-
-        // Quick Actions
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    // Implement emergency alert
-                  },
-                  icon: const Icon(Icons.warning, color: Colors.white),
-                  label: const Text("Emergency Alert"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.shade400,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    // Clear location history
-                    setState(() {
-                      _locationHistory.clear();
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Location history cleared')),
-                    );
-                  },
-                  icon: const Icon(Icons.clear_all, color: Colors.black),
-                  label: const Text("Clear History"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey.shade200,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
         ),
         const SizedBox(height: 20),

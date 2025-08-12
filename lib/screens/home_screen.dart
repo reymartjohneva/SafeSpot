@@ -656,9 +656,52 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         index: _selectedIndex,
         children: [
           _buildHomeScreen(),
-          // Placeholder screens for navigation
-          const Center(child: Text('Settings Screen')),
-          const Center(child: Text('Messages Screen')),
+          // Messages screen placeholder
+          const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.message, size: 64, color: Colors.grey),
+                SizedBox(height: 16),
+                Text(
+                  'Messages',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Chat and messaging features coming soon',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+          // Notifications screen placeholder
+          const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.notifications, size: 64, color: Colors.grey),
+                SizedBox(height: 16),
+                Text(
+                  'Notifications',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Location alerts and notifications will appear here',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
           const ProfileScreen(),
         ],
       ),
@@ -686,12 +729,12 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               label: 'Home',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.settings),
-              label: 'Settings',
-            ),
-            BottomNavigationBarItem(
               icon: Icon(Icons.message),
               label: 'Messages',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.notifications),
+              label: 'Notifications',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person),

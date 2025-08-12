@@ -710,7 +710,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.people),
-              label: 'Friends',
+              label: 'Messages',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.notifications),

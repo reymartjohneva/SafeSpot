@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'profile_screen.dart';
+import 'connections_screen.dart';  // Add this import
 
 // Geofence model
 class Geofence {
@@ -656,29 +657,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         index: _selectedIndex,
         children: [
           _buildHomeScreen(),
-          // Messages screen placeholder
-          const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.message, size: 64, color: Colors.grey),
-                SizedBox(height: 16),
-                Text(
-                  'Messages',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Chat and messaging features coming soon',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ],
-            ),
-          ),
+          // Messages screen - will be replaced with ConnectionsScreen
+          const ConnectionsScreen(),
           // Notifications screen placeholder
           const Center(
             child: Column(
@@ -729,8 +709,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               label: 'Home',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.message),
-              label: 'Messages',
+              icon: Icon(Icons.people),
+              label: 'Friends',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.notifications),

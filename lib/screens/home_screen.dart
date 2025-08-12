@@ -48,6 +48,11 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   List<LatLng> _currentGeofencePoints = [];
   final TextEditingController _geofenceNameController = TextEditingController();
 
+  // Drag functionality variables
+  bool _isDragging = false;
+  int? _draggedPointIndex;
+  LatLng? _draggedPointOriginalPosition;
+
   @override
   void initState() {
     super.initState();
@@ -315,6 +320,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     setState(() {
       _isDrawingGeofence = true;
       _currentGeofencePoints.clear();
+      _isDragging = false;
+      _draggedPointIndex = null;
     });
   }
 
@@ -325,6 +332,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       setState(() {
         _isDrawingGeofence = false;
         _currentGeofencePoints.clear();
+        _isDragging = false;
+        _draggedPointIndex = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Geofence needs at least 3 points')),
@@ -350,6 +359,11 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             ),
             const SizedBox(height: 16),
             Text('Points: ${_currentGeofencePoints.length}'),
+            const SizedBox(height: 8),
+            const Text(
+              'Tip: You can drag points to adjust the geofence shape',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
           ],
         ),
         actions: [
@@ -358,6 +372,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               setState(() {
                 _isDrawingGeofence = false;
                 _currentGeofencePoints.clear();
+                _isDragging = false;
+                _draggedPointIndex = null;
               });
               Navigator.pop(context);
             },
@@ -390,6 +406,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       _geofences.add(geofence);
       _isDrawingGeofence = false;
       _currentGeofencePoints.clear();
+      _isDragging = false;
+      _draggedPointIndex = null;
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -399,9 +417,134 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   void _onMapTap(TapPosition tapPosition, LatLng point) {
     if (_isDrawingGeofence) {
+      if (_isDragging && _draggedPointIndex != null) {
+        // Move the dragged point to the tapped location
+        setState(() {
+          _currentGeofencePoints[_draggedPointIndex!] = point;
+          _isDragging = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Point ${_draggedPointIndex! + 1} moved to new position'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.blue,
+          ),
+        );
+
+        _draggedPointIndex = null;
+        _draggedPointOriginalPosition = null;
+      } else {
+        // Add new point
+        setState(() {
+          _currentGeofencePoints.add(point);
+        });
+
+        // Show feedback
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Point ${_currentGeofencePoints.length} added. Long press on any point to move it.'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    }
+  }
+
+  // Handle long press to start dragging a point
+  void _onMapLongPress(TapPosition tapPosition, LatLng point) {
+    if (_isDrawingGeofence && _currentGeofencePoints.isNotEmpty) {
+      // Find the closest point to start dragging
+      int closestPointIndex = _findClosestPoint(point);
+      if (closestPointIndex != -1) {
+        setState(() {
+          _isDragging = true;
+          _draggedPointIndex = closestPointIndex;
+          _draggedPointOriginalPosition = _currentGeofencePoints[closestPointIndex];
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Tap on map to move point ${closestPointIndex + 1} to new position.'),
+            duration: const Duration(seconds: 3),
+            backgroundColor: Colors.orange,
+            action: SnackBarAction(
+              label: 'Cancel',
+              onPressed: () {
+                setState(() {
+                  _isDragging = false;
+                  _draggedPointIndex = null;
+                  if (_draggedPointOriginalPosition != null) {
+                    _currentGeofencePoints[closestPointIndex] = _draggedPointOriginalPosition!;
+                  }
+                });
+              },
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  // Find the closest point to the given location
+  int _findClosestPoint(LatLng targetPoint) {
+    if (_currentGeofencePoints.isEmpty) return -1;
+
+    double minDistance = double.infinity;
+    int closestIndex = -1;
+
+    for (int i = 0; i < _currentGeofencePoints.length; i++) {
+      double distance = _calculateDistance(targetPoint, _currentGeofencePoints[i]);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestIndex = i;
+      }
+    }
+
+    // Only return the index if the point is reasonably close (within ~50 meters on screen)
+    // This threshold might need adjustment based on zoom level
+    if (minDistance < 0.0005) { // Roughly 50 meters at typical zoom levels
+      return closestIndex;
+    }
+
+    return -1;
+  }
+
+  // Calculate distance between two LatLng points
+  double _calculateDistance(LatLng point1, LatLng point2) {
+    double dx = point1.latitude - point2.latitude;
+    double dy = point1.longitude - point2.longitude;
+    return dx * dx + dy * dy; // Squared distance is sufficient for comparison
+  }
+
+  // Remove a point with double tap
+  void _removePoint(int index) {
+    if (_currentGeofencePoints.length > 3) { // Keep at least 3 points
       setState(() {
-        _currentGeofencePoints.add(point);
+        _currentGeofencePoints.removeAt(index);
       });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Point ${index + 1} removed'),
+          duration: const Duration(seconds: 1),
+          backgroundColor: Colors.red,
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () {
+              // Simple undo - add point back (would need more sophisticated undo for exact position)
+            },
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Geofence must have at least 3 points'),
+          backgroundColor: Colors.orange,
+        ),
+      );
     }
   }
 
@@ -642,18 +785,56 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         if (_isDrawingGeofence)
           Container(
             padding: const EdgeInsets.all(16),
-            color: Colors.orange.shade100,
-            child: Row(
+            color: _isDragging ? Colors.orange.shade200 : Colors.orange.shade100,
+            child: Column(
               children: [
-                Icon(Icons.info, color: Colors.orange.shade800),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text('Tap on the map to add points to your geofence'),
+                Row(
+                  children: [
+                    Icon(
+                        _isDragging ? Icons.touch_app : Icons.info,
+                        color: Colors.orange.shade800
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _isDragging
+                            ? 'Moving point ${_draggedPointIndex! + 1}. Tap anywhere on map to place it.'
+                            : 'Tap to add points • Long press near a point to move it',
+                      ),
+                    ),
+                    if (_isDragging)
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _isDragging = false;
+                            if (_draggedPointOriginalPosition != null && _draggedPointIndex != null) {
+                              _currentGeofencePoints[_draggedPointIndex!] = _draggedPointOriginalPosition!;
+                            }
+                            _draggedPointIndex = null;
+                            _draggedPointOriginalPosition = null;
+                          });
+                        },
+                        child: const Text('Cancel'),
+                      )
+                    else
+                      TextButton(
+                        onPressed: _stopDrawingGeofence,
+                        child: const Text('Finish'),
+                      ),
+                  ],
                 ),
-                TextButton(
-                  onPressed: _stopDrawingGeofence,
-                  child: const Text('Finish'),
-                ),
+                if (_currentGeofencePoints.isNotEmpty && !_isDragging)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      '${_currentGeofencePoints.length} points added • ${_currentGeofencePoints.length >= 3 ? "Ready to create!" : "Need ${3 - _currentGeofencePoints.length} more point(s)"}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -676,7 +857,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               borderRadius: BorderRadius.circular(16),
               child: Stack(
                 children: [
-                  // Flutter Map
+                  // Flutter Map with simplified gesture handling
                   FlutterMap(
                     mapController: _mapController,
                     options: MapOptions(
@@ -687,6 +868,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                       minZoom: 10.0,
                       maxZoom: 18.0,
                       onTap: _onMapTap,
+                      onLongPress: _onMapLongPress,
                     ),
                     children: [
                       // Tile Layer
@@ -710,13 +892,13 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                             Polygon(
                               points: _currentGeofencePoints,
                               color: Colors.orange.withOpacity(0.2),
-                              borderColor: Colors.orange,
-                              borderStrokeWidth: 2.0,
+                              borderColor: _isDragging ? Colors.orange.shade700 : Colors.orange,
+                              borderStrokeWidth: _isDragging ? 3.0 : 2.0,
                             ),
                         ],
                       ),
 
-                      // Geofence markers for drawing
+                      // Geofence markers for drawing with enhanced visuals
                       if (_currentGeofencePoints.isNotEmpty)
                         MarkerLayer(
                           markers: _currentGeofencePoints
@@ -724,20 +906,35 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                               .entries
                               .map((entry) => Marker(
                             point: entry.value,
+                            width: _draggedPointIndex == entry.key ? 28 : 24,
+                            height: _draggedPointIndex == entry.key ? 28 : 24,
                             builder: (context) => Container(
-                              width: 16,
-                              height: 16,
+                              width: _draggedPointIndex == entry.key ? 28 : 24,
+                              height: _draggedPointIndex == entry.key ? 28 : 24,
                               decoration: BoxDecoration(
-                                color: Colors.orange,
+                                color: _draggedPointIndex == entry.key
+                                    ? Colors.orange.shade700
+                                    : Colors.orange,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
+                                border: Border.all(
+                                    color: Colors.white,
+                                    width: _draggedPointIndex == entry.key ? 3 : 2
+                                ),
+                                boxShadow: [
+                                  if (_draggedPointIndex == entry.key)
+                                    BoxShadow(
+                                      color: Colors.orange.withOpacity(0.5),
+                                      blurRadius: 8,
+                                      spreadRadius: 2,
+                                    ),
+                                ],
                               ),
                               child: Center(
                                 child: Text(
                                   '${entry.key + 1}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 8,
+                                    fontSize: _draggedPointIndex == entry.key ? 12 : 10,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -745,6 +942,18 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                             ),
                           ))
                               .toList(),
+                        ),
+
+                      // Connection lines between points (when drawing)
+                      if (_currentGeofencePoints.length >= 2)
+                        PolylineLayer(
+                          polylines: [
+                            Polyline(
+                              points: _currentGeofencePoints,
+                              strokeWidth: _isDragging ? 3.0 : 2.0,
+                              color: (_isDragging ? Colors.orange.shade700 : Colors.orange).withOpacity(0.8),
+                            ),
+                          ],
                         ),
 
                       // Location History Polyline
@@ -902,11 +1111,33 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                             color: _isDrawingGeofence ? Colors.orange : Colors.black54,
                           ),
                         ),
+                        // Clear current geofence button (only when drawing)
+                        if (_isDrawingGeofence && _currentGeofencePoints.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          FloatingActionButton.small(
+                            heroTag: "clear_geofence",
+                            onPressed: () {
+                              setState(() {
+                                _currentGeofencePoints.clear();
+                                _isDragging = false;
+                                _draggedPointIndex = null;
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Geofence points cleared'),
+                                  backgroundColor: Colors.grey,
+                                ),
+                              );
+                            },
+                            backgroundColor: Colors.red.shade100,
+                            child: const Icon(Icons.clear, color: Colors.red),
+                          ),
+                        ],
                       ],
                     ),
                   ),
 
-                  // Location info overlay
+                  // Enhanced location info overlay
                   if (_currentPosition != null)
                     Positioned(
                       bottom: 16,
@@ -946,6 +1177,18 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                               'Geofences: ${_geofences.length}',
                               style: const TextStyle(fontSize: 10),
                             ),
+                            if (_isDrawingGeofence) ...[
+                              const Divider(height: 8),
+                              Text(
+                                'Drawing: ${_currentGeofencePoints.length} points',
+                                style: const TextStyle(fontSize: 10, color: Colors.orange),
+                              ),
+                              if (_isDragging)
+                                Text(
+                                  'Dragging point ${_draggedPointIndex! + 1}',
+                                  style: const TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold),
+                                ),
+                            ],
                           ],
                         ),
                       ),

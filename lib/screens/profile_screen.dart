@@ -66,7 +66,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Row(
             children: [
               Icon(Icons.logout, color: Colors.red.shade400, size: 24),
@@ -94,13 +96,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text('Logout', style: TextStyle(color: Colors.white)),
+              child: const Text(
+                'Logout',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         );
       },
     );
   }
+
+  // Replace your _performLogout method in profile_screen.dart with this:
 
   Future<void> _performLogout() async {
     // Show loading indicator
@@ -127,10 +134,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           );
 
-          // Navigate to login page and clear navigation stack
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const LoginPage()),
-                (Route<dynamic> route) => false,
+          // Navigate to login page and clear ALL navigation stack
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/login',
+            (Route<dynamic> route) => false, // This removes ALL previous routes
           );
         }
       } else {
@@ -328,9 +335,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _buildProfileItem(
                           icon: Icons.phone_outlined,
                           title: 'Phone Number',
-                          value: userProfile!.mobile.isNotEmpty
-                              ? userProfile!.mobile
-                              : 'Not provided',
+                          value:
+                              userProfile!.mobile.isNotEmpty
+                                  ? userProfile!.mobile
+                                  : 'Not provided',
                         ),
                         const SizedBox(height: 16),
                         _buildProfileItem(
@@ -422,7 +430,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onTap: () {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Notification settings coming soon!'),
+                                content: Text(
+                                  'Notification settings coming soon!',
+                                ),
                               ),
                             );
                           },
@@ -484,7 +494,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     child: ElevatedButton.icon(
                       onPressed: _showLogoutDialog,
-                      icon: const Icon(Icons.logout_outlined, color: Colors.white, size: 20),
+                      icon: const Icon(
+                        Icons.logout_outlined,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                       label: const Text(
                         'Logout',
                         style: TextStyle(
@@ -547,11 +561,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: const Color(0xFF6366F1).withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(
-            icon,
-            color: const Color(0xFF6366F1),
-            size: 20,
-          ),
+          child: Icon(icon, color: const Color(0xFF6366F1), size: 20),
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -602,11 +612,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                icon,
-                color: Colors.grey.shade700,
-                size: 22,
-              ),
+              child: Icon(icon, color: Colors.grey.shade700, size: 22),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -624,10 +630,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                   ),
                 ],
               ),
@@ -656,8 +659,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   String _formatDate(DateTime date) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
 
     return '${months[date.month - 1]} ${date.year}';

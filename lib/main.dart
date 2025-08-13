@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'pages/login_page.dart'; // Import the login page
-import 'screens/home_screen.dart'; // Import the home screen
-import 'pages/registration_page.dart'; // Import registration page
+import 'pages/login_page.dart';
+import 'screens/home_screen.dart';
+import 'pages/registration_page.dart';
+import 'services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,15 +27,62 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
-      // Set up named routes
-      initialRoute: '/login',
+      // Use a custom widget that checks authentication state
+      home: const AuthWrapper(),
       routes: {
         '/login': (context) => const LoginPage(),
-        '/home': (context) => const MainScreen(),
+        '/home': (context) => const AuthenticatedRoute(child: MainScreen()),
         '/register': (context) => const RegistrationPage(),
       },
-      // Fallback to login page
-      home: const LoginPage(),
     );
+  }
+}
+
+// Wrapper to check authentication state on app start
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<AuthState>(
+      stream: AuthService.authStateChanges,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          // Show loading screen while checking auth state
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        // Check if user is authenticated
+        if (AuthService.isAuthenticated) {
+          return const MainScreen();
+        } else {
+          return const LoginPage();
+        }
+      },
+    );
+  }
+}
+
+// Protected route wrapper
+class AuthenticatedRoute extends StatelessWidget {
+  final Widget child;
+
+  const AuthenticatedRoute({Key? key, required this.child}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    if (AuthService.isAuthenticated) {
+      return child;
+    } else {
+      // If not authenticated, redirect to login
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
+      });
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
   }
 }

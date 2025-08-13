@@ -75,8 +75,12 @@ class _LoginPageState extends State<LoginPage> {
         print('Login successful, navigating to MainScreen'); // Debug print
         _showSnackBar(result.message, Colors.green);
 
-        // Navigate to MainScreen using named route
-        Navigator.pushReplacementNamed(context, '/home');
+        // Navigate to MainScreen and clear all previous routes
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/home',
+          (route) => false, // This removes ALL previous routes
+        );
       } else {
         print('Login failed: ${result.message}'); // Debug print
         _showSnackBar(result.message, Colors.red);

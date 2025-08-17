@@ -335,9 +335,6 @@ class AuthService {
       await _deleteOldProfilePicture(userId);
 
       // Upload new image to Supabase Storage
-      final String path = await _supabase.storage
-          .from('avatars')
-          .uploadBinary('$userId/$uploadFileName', imageBytes);
 
       // Get public URL for the uploaded image
       final String imageUrl = _supabase.storage

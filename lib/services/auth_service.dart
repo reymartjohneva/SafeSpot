@@ -1,4 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:io';
+import 'dart:typed_data';
 
 class AuthService {
   static final SupabaseClient _supabase = Supabase.instance.client;
@@ -156,6 +158,267 @@ class AuthService {
     }
   }
 
+  /// Upload profile picture and update user profile
+  /// Upload profile picture and update user profile
+  static Future<AuthResult> uploadProfilePicture({
+    required File imageFile,
+    String? fileName,
+  }) async {
+    try {
+      if (currentUser == null) {
+        return AuthResult(success: false, message: 'User not authenticated');
+      }
+
+      final userId = currentUser!.id;
+      final fileExt = imageFile.path.split('.').last.toLowerCase();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final uploadFileName = fileName ?? '$timestamp.$fileExt';
+
+      print('Uploading profile picture: $uploadFileName');
+      print('File size: ${await imageFile.length()} bytes');
+
+      // Validate file size (6MB limit for standard uploads)
+      final fileSize = await imageFile.length();
+      if (fileSize > 6 * 1024 * 1024) {
+        return AuthResult(
+          success: false,
+          message: 'File too large. Please select an image under 6MB.',
+        );
+      }
+
+      // Validate file extension
+      if (!['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(fileExt)) {
+        return AuthResult(
+          success: false,
+          message: 'Invalid file type. Please select a valid image file.',
+        );
+      }
+
+      // Delete old profile picture if it exists
+      await _deleteOldProfilePicture(userId);
+
+      // Upload new image to Supabase Storage
+      final String filePath = '$userId/$uploadFileName';
+
+      // Read file as bytes for better compatibility
+      final Uint8List fileBytes = await imageFile.readAsBytes();
+
+      final String uploadPath = await _supabase.storage
+          .from('avatars')
+          .uploadBinary(
+            filePath,
+            fileBytes,
+            fileOptions: const FileOptions(
+              cacheControl: '3600',
+              upsert: true, // This will overwrite existing files
+            ),
+          );
+
+      print('File uploaded to path: $uploadPath');
+
+      // Small delay to ensure file is fully uploaded
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Get public URL for the uploaded image
+      final String imageUrl = _supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+
+      print('Generated public URL: $imageUrl');
+
+      // Verify the file was uploaded by trying to access it
+      try {
+        final response = await _supabase.storage
+            .from('avatars')
+            .list(path: userId);
+        print(
+          'Files in user directory: ${response.map((f) => f.name).toList()}',
+        );
+      } catch (e) {
+        print('Error listing files: $e');
+      }
+
+      // Try to update profile in database first
+      try {
+        await _supabase.from('profiles').upsert({
+          'id': userId,
+          'avatar_url': imageUrl,
+          'updated_at': DateTime.now().toIso8601String(),
+        });
+        print('Profile table updated successfully');
+      } catch (e) {
+        print('Error updating profiles table (might not exist): $e');
+        // Continue anyway - we'll update user metadata
+      }
+
+      // Update user metadata (this is crucial!)
+      final Map<String, dynamic> updatedMetadata = {
+        ...?currentUser?.userMetadata,
+        'avatar_url': imageUrl,
+      };
+
+      final userUpdateResponse = await _supabase.auth.updateUser(
+        UserAttributes(data: updatedMetadata),
+      );
+
+      print('User metadata updated: ${userUpdateResponse.user?.userMetadata}');
+
+      if (userUpdateResponse.user != null) {
+        return AuthResult(
+          success: true,
+          message: 'Profile picture updated successfully!',
+        );
+      } else {
+        return AuthResult(
+          success: false,
+          message: 'Failed to update user metadata',
+        );
+      }
+    } catch (e) {
+      print('Error in uploadProfilePicture: $e');
+      print('Error type: ${e.runtimeType}');
+
+      String errorMessage = 'Failed to upload profile picture';
+      if (e.toString().contains('400')) {
+        errorMessage =
+            'Upload failed. Please check your storage bucket configuration.';
+      } else if (e.toString().contains('403')) {
+        errorMessage = 'Permission denied. Please check storage policies.';
+      } else if (e.toString().contains('413')) {
+        errorMessage = 'File too large. Please select a smaller image.';
+      }
+
+      return AuthResult(
+        success: false,
+        message: '$errorMessage: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Enhanced delete old profile picture method
+  static Future<void> _deleteOldProfilePicture(String userId) async {
+    try {
+      // List all files in the user's directory
+      final List<FileObject> files = await _supabase.storage
+          .from('avatars')
+          .list(path: userId);
+
+      // Delete each file
+      final List<String> filesToDelete =
+          files.map((file) => '$userId/${file.name}').toList();
+
+      if (filesToDelete.isNotEmpty) {
+        await _supabase.storage.from('avatars').remove(filesToDelete);
+        print('Deleted ${filesToDelete.length} old profile pictures');
+      }
+    } catch (e) {
+      print('Error deleting old profile pictures: $e');
+      // Don't throw error - this is cleanup, not critical
+    }
+  }
+
+  /// Upload profile picture from bytes (for web)
+  static Future<AuthResult> uploadProfilePictureFromBytes({
+    required Uint8List imageBytes,
+    required String fileName,
+  }) async {
+    try {
+      if (currentUser == null) {
+        return AuthResult(success: false, message: 'User not authenticated');
+      }
+
+      final userId = currentUser!.id;
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final uploadFileName = '${userId}_${timestamp}_$fileName';
+
+      // Delete old profile picture if it exists
+      await _deleteOldProfilePicture(userId);
+
+      // Upload new image to Supabase Storage
+      final String path = await _supabase.storage
+          .from('avatars')
+          .uploadBinary('$userId/$uploadFileName', imageBytes);
+
+      // Get public URL for the uploaded image
+      final String imageUrl = _supabase.storage
+          .from('avatars')
+          .getPublicUrl('$userId/$uploadFileName');
+
+      // Update profile in database
+      await _supabase
+          .from('profiles')
+          .update({
+            'avatar_url': imageUrl,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', userId);
+
+      // Update user metadata
+      await _supabase.auth.updateUser(
+        UserAttributes(data: {'avatar_url': imageUrl}),
+      );
+
+      return AuthResult(
+        success: true,
+        message: 'Profile picture updated successfully!',
+      );
+    } catch (e) {
+      return AuthResult(
+        success: false,
+        message: 'Failed to upload profile picture: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Delete profile picture
+  static Future<AuthResult> deleteProfilePicture() async {
+    try {
+      if (currentUser == null) {
+        return AuthResult(success: false, message: 'User not authenticated');
+      }
+
+      final userId = currentUser!.id;
+
+      // Delete from storage
+      await _deleteOldProfilePicture(userId);
+
+      // Try to update profile in database
+      try {
+        await _supabase
+            .from('profiles')
+            .update({
+              'avatar_url': null,
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('id', userId);
+        print('Profile table updated - avatar removed');
+      } catch (e) {
+        print('Error updating profiles table: $e');
+      }
+
+      // Update user metadata (remove avatar_url)
+      Map<String, dynamic> updatedMetadata = Map.from(
+        currentUser?.userMetadata ?? {},
+      );
+      updatedMetadata['avatar_url'] = null;
+
+      await _supabase.auth.updateUser(UserAttributes(data: updatedMetadata));
+
+      print('User metadata updated - avatar removed');
+
+      return AuthResult(
+        success: true,
+        message: 'Profile picture deleted successfully!',
+      );
+    } catch (e) {
+      print('Error in deleteProfilePicture: $e');
+      return AuthResult(
+        success: false,
+        message: 'Failed to delete profile picture: ${e.toString()}',
+      );
+    }
+  }
+
   /// Update user profile
   static Future<AuthResult> updateProfile({
     String? firstName,
@@ -182,7 +445,10 @@ class AuthService {
         if (currentUser != null) {
           await _supabase
               .from('profiles')
-              .update(updateData)
+              .update({
+                ...updateData,
+                'updated_at': DateTime.now().toIso8601String(),
+              })
               .eq('id', currentUser!.id);
         }
 
@@ -211,12 +477,89 @@ class AuthService {
               .from('profiles')
               .select()
               .eq('id', currentUser!.id)
-              .single();
+              .maybeSingle(); // Use maybeSingle() instead of single()
 
       return response;
     } catch (e) {
       print('Error fetching user profile: $e');
       return null;
+    }
+  }
+
+  // Add this method to your AuthService class to verify storage setup
+  static Future<AuthResult> verifyStorageSetup() async {
+    try {
+      if (currentUser == null) {
+        return AuthResult(success: false, message: 'User not authenticated');
+      }
+
+      print('Verifying storage setup...');
+
+      // Try to list buckets
+      final buckets = await _supabase.storage.listBuckets();
+      print('Available buckets: ${buckets.map((b) => b.name).toList()}');
+
+      // Check if avatars bucket exists
+      final avatarBucket = buckets.firstWhere(
+        (bucket) => bucket.name == 'avatars',
+        orElse: () => throw Exception('avatars bucket not found'),
+      );
+
+      print(
+        'Avatar bucket found: ${avatarBucket.name} (Public: ${avatarBucket.public})',
+      );
+
+      // Try to create a test file
+      final testData = Uint8List.fromList([1, 2, 3, 4]);
+      final testPath = '${currentUser!.id}/test.txt';
+
+      await _supabase.storage.from('avatars').uploadBinary(testPath, testData);
+
+      print('Test upload successful');
+
+      // Try to get public URL
+      final testUrl = _supabase.storage.from('avatars').getPublicUrl(testPath);
+
+      print('Test URL generated: $testUrl');
+
+      // Clean up test file
+      await _supabase.storage.from('avatars').remove([testPath]);
+
+      print('Storage setup verification completed successfully');
+
+      return AuthResult(success: true, message: 'Storage setup is correct');
+    } catch (e) {
+      print('Storage setup verification failed: $e');
+
+      String message = 'Storage setup issue: ';
+      if (e.toString().contains('avatars bucket not found')) {
+        message +=
+            'Please create an "avatars" bucket in your Supabase dashboard.';
+      } else if (e.toString().contains('403')) {
+        message += 'Permission denied. Please check your storage policies.';
+      } else {
+        message += e.toString();
+      }
+
+      return AuthResult(success: false, message: message);
+    }
+  }
+
+  // Add this method to test a specific avatar URL
+  static Future<bool> testAvatarUrl(String url) async {
+    try {
+      // Try to download just the headers to test if URL is accessible
+      final uri = Uri.parse(url);
+      final response = await HttpClient().headUrl(uri);
+      final httpResponse = await response.close();
+
+      print('Avatar URL test - Status: ${httpResponse.statusCode}');
+      print('Avatar URL test - Headers: ${httpResponse.headers}');
+
+      return httpResponse.statusCode == 200;
+    } catch (e) {
+      print('Avatar URL test failed: $e');
+      return false;
     }
   }
 
@@ -236,6 +579,7 @@ class AuthService {
         'last_name': lastName,
         'mobile': mobile,
         'full_name': '$firstName $lastName',
+        'avatar_url': null, // Add avatar_url field
         'created_at': DateTime.now().toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(),
       });
@@ -305,6 +649,7 @@ class UserProfile {
   final String lastName;
   final String mobile;
   final String fullName;
+  final String? avatarUrl; // Add avatar URL field
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -315,6 +660,7 @@ class UserProfile {
     required this.lastName,
     required this.mobile,
     required this.fullName,
+    this.avatarUrl,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -327,6 +673,7 @@ class UserProfile {
       lastName: json['last_name'],
       mobile: json['mobile'],
       fullName: json['full_name'],
+      avatarUrl: json['avatar_url'], // Add avatar URL parsing
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
     );
@@ -340,6 +687,7 @@ class UserProfile {
       'last_name': lastName,
       'mobile': mobile,
       'full_name': fullName,
+      'avatar_url': avatarUrl, // Add avatar URL to JSON
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };

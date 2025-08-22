@@ -51,5 +51,7 @@
 	<string>This app needs access to photo library to select profile pictures</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>This app needs access to microphone for camera functionality</string>
+	<key>NSCameraUsageDescription</key>
+	<string>We need camera access to scan QR codes for adding friends</string>
 </dict>
 </plist>

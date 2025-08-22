@@ -18,6 +18,7 @@
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" android:minSdkVersion="33" />
 
+
     <application
         android:label="safe_spot"
         android:name="${applicationName}"

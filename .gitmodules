@@ -1,0 +1,3 @@
+[submodule "SafeSpot"]
+	path = SafeSpot
+	url = https://github.com/reymartjohneva/SafeSpot.git

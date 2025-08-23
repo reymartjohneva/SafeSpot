@@ -40,8 +40,6 @@ dependencies:
   permission_handler: ^12.0.1
   supabase_flutter: ^2.9.1
   image_picker: ^1.1.2
-  qr_flutter: ^4.1.0
-  qr_code_scanner: ^1.0.1
 
 dev_dependencies:
   flutter_test:

@@ -1177,12 +1177,12 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                                 _currentPosition!.latitude,
                                 _currentPosition!.longitude,
                               ),
-                              width: 40,
-                              height: 40,
+                              width: 30,
+                              height: 30,
                               builder:
                                   (context) => Container(
-                                    width: 40,
-                                    height: 40,
+                                    width: 30,
+                                    height: 30,
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       color: Colors.white,

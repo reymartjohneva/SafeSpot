@@ -1,41 +1,6 @@
 import 'package:flutter/material.dart';
+import '../services/friend_service.dart';
 
-// Models for user data
-class User {
-  final String id;
-  final String name;
-  final String email;
-  final String? profileImage;
-  final bool isOnline;
-  final DateTime? lastSeen;
-
-  User({
-    required this.id,
-    required this.name,
-    required this.email,
-    this.profileImage,
-    this.isOnline = false,
-    this.lastSeen,
-  });
-}
-
-class ConnectionRequest {
-  final String id;
-  final User sender;
-  final User receiver;
-  final String status; // 'pending', 'accepted', 'declined'
-  final DateTime createdAt;
-
-  ConnectionRequest({
-    required this.id,
-    required this.sender,
-    required this.receiver,
-    required this.status,
-    required this.createdAt,
-  });
-}
-
-// Main Connections Screen with tabs
 class ConnectionsScreen extends StatefulWidget {
   const ConnectionsScreen({Key? key}) : super(key: key);
 
@@ -43,680 +8,549 @@ class ConnectionsScreen extends StatefulWidget {
   State<ConnectionsScreen> createState() => _ConnectionsScreenState();
 }
 
-class _ConnectionsScreenState extends State<ConnectionsScreen> with TickerProviderStateMixin {
+class _ConnectionsScreenState extends State<ConnectionsScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final _searchController = TextEditingController();
 
-  // Sample data - replace with actual data from your backend
-  List<User> friends = [
-    User(
-      id: '1',
-      name: 'Alice Johnson',
-      email: 'alice@example.com',
-      profileImage: null,
-      isOnline: true,
-    ),
-    User(
-      id: '2',
-      name: 'Bob Smith',
-      email: 'bob@example.com',
-      profileImage: null,
-      isOnline: false,
-      lastSeen: DateTime.now().subtract(const Duration(hours: 2)),
-    ),
-    User(
-      id: '3',
-      name: 'Carol Davis',
-      email: 'carol@example.com',
-      profileImage: null,
-      isOnline: true,
-    ),
-  ];
+  List<UserProfile> _searchResults = [];
+  List<Friendship> _friends = [];
+  List<FriendRequest> _incomingRequests = [];
+  List<FriendRequest> _outgoingRequests = [];
 
-  List<ConnectionRequest> pendingRequests = [
-    ConnectionRequest(
-      id: '1',
-      sender: User(
-        id: '4',
-        name: 'David Wilson',
-        email: 'david@example.com',
-        isOnline: false,
-      ),
-      receiver: User(id: 'current', name: 'You', email: 'you@example.com'),
-      status: 'pending',
-      createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-    ),
-    ConnectionRequest(
-      id: '2',
-      sender: User(
-        id: '5',
-        name: 'Emma Brown',
-        email: 'emma@example.com',
-        isOnline: true,
-      ),
-      receiver: User(id: 'current', name: 'You', email: 'you@example.com'),
-      status: 'pending',
-      createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
-    ),
-  ];
+  bool _isSearching = false;
+  bool _isLoadingFriends = false;
+  bool _isLoadingRequests = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadData();
+    _setupNotificationListener();
+  }
+
+  void _setupNotificationListener() {
+    FriendService.notificationStream.listen((request) {
+      if (mounted) {
+        if (request.recipientId == FriendService.currentUserId) {
+          // Incoming request
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'New friend request from ${request.senderName ?? "Unknown"}',
+              ),
+              action: SnackBarAction(
+                label: 'View',
+                onPressed: () => _tabController.animateTo(1),
+              ),
+            ),
+          );
+          _loadRequests();
+        } else if (request.senderId == FriendService.currentUserId) {
+          // Response to our request
+          final statusText =
+              request.status == RequestStatus.accepted
+                  ? 'accepted'
+                  : 'declined';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Your friend request was $statusText'),
+              backgroundColor:
+                  request.status == RequestStatus.accepted
+                      ? Colors.green
+                      : Colors.red,
+            ),
+          );
+          if (request.status == RequestStatus.accepted) {
+            _loadFriends();
+          }
+          _loadRequests();
+        }
+      }
+    });
+  }
+
+  Future<void> _loadData() async {
+    await Future.wait([_loadFriends(), _loadRequests()]);
+  }
+
+  Future<void> _loadFriends() async {
+    if (!FriendService.isAuthenticated) return;
+
+    setState(() => _isLoadingFriends = true);
+    try {
+      final friends = await FriendService.getFriends();
+      if (mounted) {
+        setState(() => _friends = friends);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load friends: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoadingFriends = false);
+    }
+  }
+
+  Future<void> _loadRequests() async {
+    if (!FriendService.isAuthenticated) return;
+
+    setState(() => _isLoadingRequests = true);
+    try {
+      final incoming = await FriendService.getIncomingRequests();
+      final outgoing = await FriendService.getOutgoingRequests();
+      if (mounted) {
+        setState(() {
+          _incomingRequests = incoming;
+          _outgoingRequests = outgoing;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load requests: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoadingRequests = false);
+    }
+  }
+
+  Future<void> _searchUsers() async {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) {
+      setState(() => _searchResults = []);
+      return;
+    }
+
+    setState(() => _isSearching = true);
+    try {
+      final results = await FriendService.searchUsersByEmail(query);
+      if (mounted) {
+        setState(() => _searchResults = results);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Search failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isSearching = false);
+    }
+  }
+
+  Future<void> _sendFriendRequest(UserProfile user) async {
+    try {
+      await FriendService.sendFriendRequest(recipientId: user.id);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Friend request sent to ${user.displayName}')),
+      );
+      _loadRequests(); // Refresh requests
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  Future<void> _respondToRequest(String requestId, bool accept) async {
+    try {
+      await FriendService.respondToFriendRequest(
+        requestId: requestId,
+        accept: accept,
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(accept ? 'Request accepted' : 'Request declined'),
+        ),
+      );
+      _loadData(); // Refresh all data
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to respond: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!FriendService.isAuthenticated) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Connections')),
+        body: const Center(child: Text('Please log in to view connections')),
+      );
+    }
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text(
-          'Connections',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0,
+        title: const Text('Connections'),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: Colors.red.shade300,
-          labelColor: Colors.red.shade300,
-          unselectedLabelColor: Colors.grey.shade600,
           tabs: [
+            Tab(text: 'Search', icon: Icon(Icons.search)),
             Tab(
-              text: 'Friends (${friends.length})',
-              icon: const Icon(Icons.people),
+              text: 'Requests (${_incomingRequests.length})',
+              icon: Icon(Icons.inbox),
             ),
-            Tab(
-              text: 'Requests (${pendingRequests.length})',
-              icon: const Icon(Icons.person_add),
-            ),
-            const Tab(
-              text: 'Add Friend',
-              icon: Icon(Icons.search),
-            ),
+            Tab(text: 'Friends (${_friends.length})', icon: Icon(Icons.people)),
           ],
         ),
-        actions: [
-          IconButton(
-            onPressed: () {
-              _showScanQRCode(context);
-            },
-            icon: const Icon(Icons.qr_code_scanner),
-          ),
-        ],
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _buildFriendsList(),
-          _buildRequestsList(),
-          _buildAddFriend(),
-        ],
+        children: [_buildSearchTab(), _buildRequestsTab(), _buildFriendsTab()],
       ),
     );
   }
 
-  // Friends List Tab
-  Widget _buildFriendsList() {
-    if (friends.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.people_outline, size: 80, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              'No Friends Yet',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Add friends to share your location and stay connected',
-              style: TextStyle(color: Colors.grey),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: friends.length,
-      itemBuilder: (context, index) {
-        final friend = friends[index];
-        return _buildFriendCard(friend);
-      },
-    );
-  }
-
-  Widget _buildFriendCard(User friend) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: Stack(
-          children: [
-            CircleAvatar(
-              radius: 25,
-              backgroundColor: Colors.red.shade100,
-              child: friend.profileImage != null
-                  ? ClipRRect(
-                borderRadius: BorderRadius.circular(25),
-                child: Image.network(
-                  friend.profileImage!,
-                  width: 50,
-                  height: 50,
-                  fit: BoxFit.cover,
-                ),
-              )
-                  : Text(
-                friend.name.split(' ').map((n) => n[0]).take(2).join(),
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red.shade300,
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: Container(
-                width: 16,
-                height: 16,
-                decoration: BoxDecoration(
-                  color: friend.isOnline ? Colors.green : Colors.grey,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                ),
-              ),
-            ),
-          ],
-        ),
-        title: Text(
-          friend.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(friend.email),
-            const SizedBox(height: 4),
-            Text(
-              friend.isOnline
-                  ? 'Online'
-                  : friend.lastSeen != null
-                  ? 'Last seen ${_formatLastSeen(friend.lastSeen!)}'
-                  : 'Offline',
-              style: TextStyle(
-                fontSize: 12,
-                color: friend.isOnline ? Colors.green : Colors.grey,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) {
-            switch (value) {
-              case 'view_location':
-                _viewFriendLocation(friend);
-                break;
-              case 'message':
-                _messageFriend(friend);
-                break;
-              case 'remove':
-                _removeFriend(friend);
-                break;
-            }
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'view_location',
-              child: ListTile(
-                leading: Icon(Icons.location_on),
-                title: Text('View Location'),
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'message',
-              child: ListTile(
-                leading: Icon(Icons.message),
-                title: Text('Send Message'),
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'remove',
-              child: ListTile(
-                leading: Icon(Icons.person_remove, color: Colors.red),
-                title: Text('Remove Friend', style: TextStyle(color: Colors.red)),
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Connection Requests Tab
-  Widget _buildRequestsList() {
-    if (pendingRequests.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.person_add_disabled, size: 80, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              'No Pending Requests',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'You\'ll see friend requests here when people want to connect with you',
-              style: TextStyle(color: Colors.grey),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: pendingRequests.length,
-      itemBuilder: (context, index) {
-        final request = pendingRequests[index];
-        return _buildRequestCard(request);
-      },
-    );
-  }
-
-  Widget _buildRequestCard(ConnectionRequest request) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: CircleAvatar(
-                radius: 25,
-                backgroundColor: Colors.orange.shade100,
-                child: request.sender.profileImage != null
-                    ? ClipRRect(
-                  borderRadius: BorderRadius.circular(25),
-                  child: Image.network(
-                    request.sender.profileImage!,
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
-                  ),
-                )
-                    : Text(
-                  request.sender.name.split(' ').map((n) => n[0]).take(2).join(),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.orange.shade600,
-                  ),
-                ),
-              ),
-              title: Text(
-                request.sender.name,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(request.sender.email),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Sent ${_formatRequestTime(request.createdAt)}',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _declineRequest(request),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text('Decline'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _acceptRequest(request),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text('Accept'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Add Friend Tab
-  Widget _buildAddFriend() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Find Friends',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-
-          // Search by email
-          TextField(
+  Widget _buildSearchTab() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: TextField(
+            controller: _searchController,
             decoration: InputDecoration(
-              labelText: 'Search by email',
-              hintText: 'Enter friend\'s email address',
-              prefixIcon: const Icon(Icons.email),
-              suffixIcon: IconButton(
-                onPressed: () {
-                  // Implement search functionality
-                  _searchUserByEmail();
-                },
-                icon: const Icon(Icons.search),
-              ),
+              hintText: 'Search users by email...',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon:
+                  _isSearching
+                      ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchResults = []);
+                        },
+                      ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
+            onChanged: (_) => _searchUsers(),
+            onSubmitted: (_) => _searchUsers(),
           ),
-
-          const SizedBox(height: 24),
-
-          // Other ways to connect
-          const Text(
-            'Other Ways to Connect',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 16),
-
-          // QR Code option
-          Card(
-            child: ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.qr_code, color: Colors.blue),
-              ),
-              title: const Text('Scan QR Code'),
-              subtitle: const Text('Scan a friend\'s QR code to connect instantly'),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => _showScanQRCode(context),
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Share your QR code
-          Card(
-            child: ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.share, color: Colors.green),
-              ),
-              title: const Text('Share Your QR Code'),
-              subtitle: const Text('Let others scan your code to send you requests'),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => _showShareQRCode(context),
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Nearby users
-          Card(
-            child: ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.location_on, color: Colors.orange),
-              ),
-              title: const Text('Find Nearby Users'),
-              subtitle: const Text('Discover SafeSpot users near your location'),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => _findNearbyUsers(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Helper methods
-  String _formatLastSeen(DateTime lastSeen) {
-    final now = DateTime.now();
-    final difference = now.difference(lastSeen);
-
-    if (difference.inMinutes < 1) {
-      return 'just now';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m ago';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}h ago';
-    } else {
-      return '${difference.inDays}d ago';
-    }
-  }
-
-  String _formatRequestTime(DateTime createdAt) {
-    final now = DateTime.now();
-    final difference = now.difference(createdAt);
-
-    if (difference.inMinutes < 1) {
-      return 'just now';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes} minutes ago';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours} hours ago';
-    } else {
-      return '${difference.inDays} days ago';
-    }
-  }
-
-  // Action methods
-  void _acceptRequest(ConnectionRequest request) {
-    setState(() {
-      pendingRequests.remove(request);
-      friends.add(request.sender);
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('You are now connected with ${request.sender.name}'),
-        backgroundColor: Colors.green,
-        action: SnackBarAction(
-          label: 'View Location',
-          textColor: Colors.white,
-          onPressed: () => _viewFriendLocation(request.sender),
         ),
-      ),
+        Expanded(
+          child:
+              _searchResults.isEmpty && _searchController.text.isNotEmpty
+                  ? Center(
+                    child:
+                        _isSearching
+                            ? const CircularProgressIndicator()
+                            : const Text('No users found'),
+                  )
+                  : ListView.builder(
+                    itemCount: _searchResults.length,
+                    itemBuilder: (context, index) {
+                      final user = _searchResults[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundImage:
+                                user.avatarUrl != null
+                                    ? NetworkImage(user.avatarUrl!)
+                                    : null,
+                            child:
+                                user.avatarUrl == null
+                                    ? Text(
+                                      user.displayName.isNotEmpty
+                                          ? user.displayName[0].toUpperCase()
+                                          : '?',
+                                    )
+                                    : null,
+                          ),
+                          title: Text(
+                            user.displayName.isNotEmpty
+                                ? user.displayName
+                                : 'Unknown User',
+                          ),
+                          subtitle: Text(user.email),
+                          trailing: ElevatedButton.icon(
+                            onPressed: () => _sendFriendRequest(user),
+                            icon: const Icon(Icons.person_add),
+                            label: const Text('Add Friend'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+        ),
+      ],
     );
   }
 
-  void _declineRequest(ConnectionRequest request) {
-    setState(() {
-      pendingRequests.remove(request);
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Declined request from ${request.sender.name}'),
-        backgroundColor: Colors.orange,
-      ),
-    );
-  }
-
-  void _removeFriend(User friend) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Remove Friend'),
-        content: Text('Are you sure you want to remove ${friend.name} from your friends list?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                friends.remove(friend);
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${friend.name} has been removed from your friends'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            },
-            child: const Text('Remove', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _viewFriendLocation(User friend) {
-    // Navigate back to home tab and show friend's location
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Viewing ${friend.name}\'s location on map'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
-
-  void _messageFriend(User friend) {
-    // Navigate to message screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening chat with ${friend.name}'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  void _searchUserByEmail() {
-    // Implement email search
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Searching for user...'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
-
-  void _showScanQRCode(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Scan QR Code'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
+  Widget _buildRequestsTab() {
+    return RefreshIndicator(
+      onRefresh: _loadRequests,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.qr_code_scanner, size: 64, color: Colors.blue),
-            SizedBox(height: 16),
-            Text('QR Code scanner would open here'),
+            if (_incomingRequests.isNotEmpty) ...[
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'Incoming Requests',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _incomingRequests.length,
+                itemBuilder: (context, index) {
+                  final request = _incomingRequests[index];
+                  return Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        child: Text(
+                          request.senderName?.isNotEmpty == true
+                              ? request.senderName![0].toUpperCase()
+                              : '?',
+                        ),
+                      ),
+                      title: Text(request.senderName ?? 'Unknown User'),
+                      subtitle: Text(request.senderEmail ?? 'No email'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextButton(
+                            onPressed:
+                                () => _respondToRequest(request.id, false),
+                            child: const Text('Decline'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.red,
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed:
+                                () => _respondToRequest(request.id, true),
+                            child: const Text('Accept'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+            if (_outgoingRequests.isNotEmpty) ...[
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'Sent Requests',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _outgoingRequests.length,
+                itemBuilder: (context, index) {
+                  final request = _outgoingRequests[index];
+                  return Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.orange,
+                        child: const Icon(Icons.schedule, color: Colors.white),
+                      ),
+                      title: Text(
+                        'Request to ${request.senderName ?? "Unknown User"}',
+                      ),
+                      subtitle: Text(
+                        'Sent on ${request.createdAt.day}/${request.createdAt.month}/${request.createdAt.year}',
+                      ),
+                      trailing: const Chip(
+                        label: Text('Pending'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+            if (_incomingRequests.isEmpty && _outgoingRequests.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Text('No friend requests'),
+                ),
+              ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
       ),
     );
   }
 
-  void _showShareQRCode(BuildContext context) {
-    showDialog(
+  Widget _buildFriendsTab() {
+    return RefreshIndicator(
+      onRefresh: _loadFriends,
+      child:
+          _isLoadingFriends
+              ? const Center(child: CircularProgressIndicator())
+              : _friends.isEmpty
+              ? const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.people_outline, size: 64, color: Colors.grey),
+                    SizedBox(height: 16),
+                    Text(
+                      'No friends yet',
+                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                    ),
+                    Text(
+                      'Search for users to add friends',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                ),
+              )
+              : ListView.builder(
+                itemCount: _friends.length,
+                itemBuilder: (context, index) {
+                  final friendship = _friends[index];
+                  return Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        child: Text(
+                          friendship.friendName?.isNotEmpty == true
+                              ? friendship.friendName![0].toUpperCase()
+                              : '?',
+                        ),
+                      ),
+                      title: Text(friendship.friendName ?? 'Unknown User'),
+                      subtitle: Text(friendship.friendEmail ?? 'No email'),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.more_vert),
+                        onPressed: () => _showFriendOptions(friendship),
+                      ),
+                    ),
+                  );
+                },
+              ),
+    );
+  }
+
+  void _showFriendOptions(Friendship friendship) {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Your QR Code'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.qr_code, size: 120, color: Colors.green),
-            SizedBox(height: 16),
-            Text('Others can scan this code to send you a friend request'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+      builder:
+          (context) => Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.location_on),
+                  title: const Text('View Location'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // TODO: Implement location viewing
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Location viewing coming soon!'),
+                      ),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.person_remove, color: Colors.red),
+                  title: const Text(
+                    'Remove Friend',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  onTap: () => _removeFriend(friendship),
+                ),
+              ],
+            ),
           ),
-          ElevatedButton(
-            onPressed: () {
-              // Implement share functionality
-              Navigator.pop(context);
-            },
-            child: const Text('Share'),
-          ),
-        ],
-      ),
     );
   }
 
-  void _findNearbyUsers() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Searching for nearby users...'),
-        backgroundColor: Colors.orange,
-      ),
+  Future<void> _removeFriend(Friendship friendship) async {
+    Navigator.pop(context);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Remove Friend'),
+            content: Text(
+              'Remove ${friendship.friendName ?? "this user"} from your friends?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  'Remove',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
+          ),
     );
+
+    if (confirmed == true) {
+      try {
+        await FriendService.removeFriend(friendship.id);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Friend removed')));
+        _loadFriends();
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to remove friend: $e')));
+      }
+    }
   }
 }

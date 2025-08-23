@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'registration_page.dart'; // Import the registration page
-import '../screens/home_screen.dart'; // Import the main screen from screens directory
+// Import the main screen from screens directory
 import '../services/auth_service.dart'; // Import your AuthService
 
 class LoginPage extends StatefulWidget {

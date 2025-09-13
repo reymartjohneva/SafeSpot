@@ -51,9 +51,10 @@ class _DeviceScreenState extends State<DeviceScreen>
 
       // Load location history for each device
       for (var device in devices) {
-        _loadDeviceLocationHistory(device.deviceId);
+        await _loadDeviceLocationHistory(device.deviceId);
       }
     } catch (e) {
+      print('Error loading devices: $e');
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -76,6 +77,7 @@ class _DeviceScreenState extends State<DeviceScreen>
       }
     } catch (e) {
       print('Failed to load location history for $deviceId: $e');
+      // Don't show error for location history as it's optional
     }
   }
 
@@ -100,7 +102,7 @@ class _DeviceScreenState extends State<DeviceScreen>
 
       _deviceIdController.clear();
       _deviceNameController.clear();
-      _loadDevices(); // Refresh the list
+      await _loadDevices(); // Refresh the list
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -144,7 +146,7 @@ class _DeviceScreenState extends State<DeviceScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Device deleted successfully')),
         );
-        _loadDevices();
+        await _loadDevices();
       } catch (e) {
         ScaffoldMessenger.of(
           context,
@@ -156,8 +158,7 @@ class _DeviceScreenState extends State<DeviceScreen>
   void _centerMapOnDevice(String deviceId) {
     final locations = _deviceLocations[deviceId];
     if (locations != null && locations.isNotEmpty) {
-      final latestLocation =
-          locations.first; // First is most recent due to DESC order
+      final latestLocation = locations.first;
       _mapController.move(
         LatLng(latestLocation.latitude, latestLocation.longitude),
         15.0,
@@ -166,6 +167,15 @@ class _DeviceScreenState extends State<DeviceScreen>
         _selectedDeviceId = deviceId;
       });
       _tabController.animateTo(1); // Switch to map tab
+    }
+  }
+
+  // Safe method to find device by ID
+  Device? _findDeviceById(String deviceId) {
+    try {
+      return _devices.firstWhere((d) => d.deviceId == deviceId);
+    } catch (e) {
+      return null;
     }
   }
 
@@ -293,11 +303,10 @@ class _DeviceScreenState extends State<DeviceScreen>
                       itemCount: _devices.length,
                       itemBuilder: (context, index) {
                         final device = _devices[index];
-                        final locations = _deviceLocations[device.deviceId];
+                        final locations =
+                            _deviceLocations[device.deviceId] ?? [];
                         final latestLocation =
-                            locations?.isNotEmpty == true
-                                ? locations!.first
-                                : null;
+                            locations.isNotEmpty ? locations.first : null;
 
                         return Card(
                           margin: const EdgeInsets.symmetric(
@@ -312,7 +321,7 @@ class _DeviceScreenState extends State<DeviceScreen>
                                           ? Colors.green
                                           : Colors.orange)
                                       : Colors.grey,
-                              child: Icon(
+                              child: const Icon(
                                 Icons.phone_android,
                                 color: Colors.white,
                               ),
@@ -402,7 +411,108 @@ class _DeviceScreenState extends State<DeviceScreen>
               userAgentPackageName: 'com.example.safespot',
             ),
 
-            // Device location markers
+            // Location history lines (polylines) for each device
+            PolylineLayer(
+              polylines:
+                  _deviceLocations.entries
+                      .where((entry) => entry.value.length > 1)
+                      .map((entry) {
+                        final deviceId = entry.key;
+                        final locations = entry.value;
+                        final device = _findDeviceById(deviceId);
+
+                        if (device == null) return null;
+
+                        final isSelected =
+                            _selectedDeviceId == null ||
+                            _selectedDeviceId == deviceId;
+
+                        if (!isSelected) return null;
+
+                        final points =
+                            locations.reversed
+                                .map(
+                                  (location) => LatLng(
+                                    location.latitude,
+                                    location.longitude,
+                                  ),
+                                )
+                                .toList();
+
+                        return Polyline(
+                          points: points,
+                          strokeWidth:
+                              isSelected && _selectedDeviceId == deviceId
+                                  ? 3.0
+                                  : 2.0,
+                          color: _getDeviceColor(
+                            device.deviceId,
+                          ).withOpacity(0.7),
+                        );
+                      })
+                      .where((polyline) => polyline != null)
+                      .cast<Polyline>()
+                      .toList(),
+            ),
+
+            // Historical location markers (small dots)
+            MarkerLayer(
+              markers:
+                  _deviceLocations.entries.expand((entry) {
+                    final deviceId = entry.key;
+                    final locations = entry.value;
+                    final device = _findDeviceById(deviceId);
+
+                    if (device == null) return <Marker>[];
+
+                    final isSelected =
+                        _selectedDeviceId == null ||
+                        _selectedDeviceId == deviceId;
+
+                    if (!isSelected || locations.isEmpty) return <Marker>[];
+
+                    final locationsList = locations.skip(1).toList();
+                    return locationsList.map((location) {
+                      return Marker(
+                        point: LatLng(location.latitude, location.longitude),
+                        width: 12,
+                        height: 12,
+                        builder:
+                            (context) => Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: _getDeviceColor(device.deviceId),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 2,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Container(
+                                  width: 4,
+                                  height: 4,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                      );
+                    }).toList();
+                  }).toList(),
+            ),
+
+            // Latest location markers (bigger, with device info)
             MarkerLayer(
               markers:
                   _deviceLocations.entries.expand((entry) {
@@ -410,11 +520,16 @@ class _DeviceScreenState extends State<DeviceScreen>
                     final locations = entry.value;
                     if (locations.isEmpty) return <Marker>[];
 
-                    final device = _devices.firstWhere(
-                      (d) => d.deviceId == deviceId,
-                    );
+                    final device = _findDeviceById(deviceId);
+                    if (device == null) return <Marker>[];
+
                     final latestLocation = locations.first;
                     final isSelected = _selectedDeviceId == deviceId;
+                    final isVisible =
+                        _selectedDeviceId == null ||
+                        _selectedDeviceId == deviceId;
+
+                    if (!isVisible) return <Marker>[];
 
                     return [
                       Marker(
@@ -422,36 +537,74 @@ class _DeviceScreenState extends State<DeviceScreen>
                           latestLocation.latitude,
                           latestLocation.longitude,
                         ),
-                        width: isSelected ? 50 : 40,
-                        height: isSelected ? 50 : 40,
+                        width: isSelected ? 60 : 50,
+                        height: isSelected ? 60 : 50,
                         builder:
-                            (context) => Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color:
-                                    device.isActive ? Colors.blue : Colors.grey,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 3,
+                            (context) => GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedDeviceId =
+                                      _selectedDeviceId == deviceId
+                                          ? null
+                                          : deviceId;
+                                });
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: _getDeviceColor(device.deviceId),
+                                  border: Border.all(
+                                    color:
+                                        isSelected
+                                            ? Colors.yellow
+                                            : Colors.white,
+                                    width: isSelected ? 4 : 3,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.3),
+                                      blurRadius: isSelected ? 8 : 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: Text(
-                                  device.deviceName
-                                      .substring(0, 1)
-                                      .toUpperCase(),
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: isSelected ? 16 : 14,
-                                  ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      device.isActive
+                                          ? Icons.phone_android
+                                          : Icons.phone_android_outlined,
+                                      color: Colors.white,
+                                      size: isSelected ? 20 : 16,
+                                    ),
+                                    if (isSelected) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        device.deviceName.length > 8
+                                            ? '${device.deviceName.substring(0, 8)}...'
+                                            : device.deviceName,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 8,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ] else
+                                      Text(
+                                        device.deviceName.isNotEmpty
+                                            ? device.deviceName
+                                                .substring(0, 1)
+                                                .toUpperCase()
+                                            : '?',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -459,6 +612,89 @@ class _DeviceScreenState extends State<DeviceScreen>
                     ];
                   }).toList(),
             ),
+
+            // Device info popup for selected device
+            if (_selectedDeviceId != null &&
+                _deviceLocations[_selectedDeviceId]?.isNotEmpty == true)
+              MarkerLayer(
+                markers:
+                    [
+                      () {
+                        final locations = _deviceLocations[_selectedDeviceId]!;
+                        final device = _findDeviceById(_selectedDeviceId!);
+                        if (device == null) return null;
+
+                        final latestLocation = locations.first;
+
+                        return Marker(
+                          point: LatLng(
+                            latestLocation.latitude,
+                            latestLocation.longitude,
+                          ),
+                          width: 200,
+                          height: 100,
+                          builder:
+                              (context) => Transform.translate(
+                                offset: const Offset(0, -80),
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: _getDeviceColor(device.deviceId),
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.2),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        device.deviceName,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      Text(
+                                        'ID: ${device.deviceId}',
+                                        style: const TextStyle(fontSize: 10),
+                                      ),
+                                      Text(
+                                        'Last seen: ${_formatDate(latestLocation.createdAt)}',
+                                        style: const TextStyle(fontSize: 10),
+                                      ),
+                                      Text(
+                                        'History: ${locations.length} points',
+                                        style: const TextStyle(fontSize: 10),
+                                      ),
+                                      Text(
+                                        'Status: ${device.isActive ? "Active" : "Inactive"}',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color:
+                                              device.isActive
+                                                  ? Colors.green
+                                                  : Colors.orange,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                        );
+                      }(),
+                    ].where((marker) => marker != null).cast<Marker>().toList(),
+              ),
           ],
         ),
 
@@ -493,7 +729,27 @@ class _DeviceScreenState extends State<DeviceScreen>
                 ..._devices.map(
                   (device) => DropdownMenuItem<String>(
                     value: device.deviceId,
-                    child: Text(device.deviceName),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 16,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _getDeviceColor(device.deviceId),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(device.deviceName)),
+                        Text(
+                          '(${_deviceLocations[device.deviceId]?.length ?? 0})',
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -508,11 +764,105 @@ class _DeviceScreenState extends State<DeviceScreen>
             ),
           ),
         ),
+
+        // Legend
+        Positioned(
+          bottom: 16,
+          left: 16,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Legend',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.blue,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Text('History', style: TextStyle(fontSize: 10)),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.blue,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: const Icon(
+                        Icons.phone_android,
+                        size: 8,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Text('Latest', style: TextStyle(fontSize: 10)),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(width: 12, height: 2, color: Colors.blue),
+                    const SizedBox(width: 4),
+                    const Text('Path', style: TextStyle(fontSize: 10)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  Color _getDeviceColor(String deviceId) {
+    final hash = deviceId.hashCode;
+    final colors = [
+      Colors.blue,
+      Colors.red,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.teal,
+      Colors.indigo,
+      Colors.pink,
+      Colors.cyan,
+      Colors.amber,
+    ];
+    return colors[hash.abs() % colors.length];
   }
 }

@@ -18,12 +18,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   int _selectedIndex = 0;
   final MapController _mapController = MapController();
 
-  // Location tracking variables
+  // Static location for marker display only (no tracking)
   Position? _currentPosition;
   bool _isLocationServiceEnabled = false;
-  bool _isTrackingLocation = false;
   bool _isGettingLocation = false;
-  List<LatLng> _locationHistory = [];
 
   // Geofence variables
   List<Geofence> _geofences = [];
@@ -103,7 +101,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     bool wasLocationEnabled = _isLocationServiceEnabled;
     await _checkLocationService();
 
-    // If location service was just enabled, reinitialize everything
+    // If location service was just enabled, get location once
     if (!wasLocationEnabled && _isLocationServiceEnabled) {
       await _initializeLocation();
     }
@@ -120,9 +118,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
       if (_isLocationServiceEnabled) {
         await _getCurrentLocation();
-        if (_currentPosition != null) {
-          _startLocationTracking();
-        }
       }
     } catch (e) {
       print('Error initializing location: $e');
@@ -165,26 +160,25 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   void _showLocationServiceDialog() {
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Location Services Disabled'),
-            content: const Text(
-              'Please enable location services to use the map features.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Geolocator.openLocationSettings();
-                },
-                child: const Text('Settings'),
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: const Text('Location Services Disabled'),
+        content: const Text(
+          'Please enable location services to display your location marker.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Geolocator.openLocationSettings();
+            },
+            child: const Text('Settings'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -212,7 +206,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         if (mounted) {
           setState(() {
             _currentPosition = position;
-            _locationHistory.add(LatLng(position.latitude, position.longitude));
           });
 
           // Center map on current location
@@ -233,69 +226,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         );
       }
     }
-  }
-
-  void _startLocationTracking() {
-    if (!_isTrackingLocation && _isLocationServiceEnabled) {
-      setState(() {
-        _isTrackingLocation = true;
-      });
-
-      const LocationSettings locationSettings = LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 10,
-      );
-
-      Geolocator.getPositionStream(locationSettings: locationSettings).listen(
-        (Position position) {
-          if (mounted) {
-            setState(() {
-              _currentPosition = position;
-              _locationHistory.add(
-                LatLng(position.latitude, position.longitude),
-              );
-
-              if (_locationHistory.length > 100) {
-                _locationHistory.removeAt(0);
-              }
-            });
-
-            _checkGeofenceStatus(position);
-          }
-        },
-        onError: (error) {
-          print('Location stream error: $error');
-          if (mounted) {
-            setState(() {
-              _isTrackingLocation = false;
-            });
-          }
-        },
-      );
-    }
-  }
-
-  void _checkGeofenceStatus(Position position) {
-    for (var geofence in _geofences) {
-      if (geofence.isActive) {
-        bool isInside = GeofenceUtils.isPointInPolygon(
-          LatLng(position.latitude, position.longitude),
-          geofence.points,
-        );
-
-        if (isInside) {
-          print('Entered geofence: ${geofence.name}');
-        } else {
-          print('Exited geofence: ${geofence.name}');
-        }
-      }
-    }
-  }
-
-  void _stopLocationTracking() {
-    setState(() {
-      _isTrackingLocation = false;
-    });
   }
 
   void _centerMapOnCurrentLocation() {
@@ -338,77 +268,73 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     _geofenceNameController.clear();
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Create Geofence'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: _geofenceNameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Geofence Name',
-                    hintText: 'Enter a name for this geofence',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text('Points: ${_currentGeofencePoints.length}'),
-                const SizedBox(height: 8),
-                const Text(
-                  'Tip: You can drag points to adjust the geofence shape',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ],
+      builder: (context) => AlertDialog(
+        title: const Text('Create Geofence'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _geofenceNameController,
+              decoration: const InputDecoration(
+                labelText: 'Geofence Name',
+                hintText: 'Enter a name for this geofence',
+              ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    _isDrawingGeofence = false;
-                    _currentGeofencePoints.clear();
-                    _isDragging = false;
-                    _draggedPointIndex = null;
-                  });
-                  Navigator.pop(context);
-                },
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed:
-                    _isSavingGeofence
-                        ? null
-                        : () async {
-                          final name = _geofenceNameController.text.trim();
-                          final validationError =
-                              GeofenceUtils.validateGeofence(
-                                name,
-                                _currentGeofencePoints,
-                              );
-
-                          if (validationError != null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(validationError),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-
-                          await _createGeofence(name);
-                          Navigator.pop(context);
-                        },
-                child:
-                    _isSavingGeofence
-                        ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                        : const Text('Create'),
-              ),
-            ],
+            const SizedBox(height: 16),
+            Text('Points: ${_currentGeofencePoints.length}'),
+            const SizedBox(height: 8),
+            const Text(
+              'Tip: You can drag points to adjust the geofence shape',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _isDrawingGeofence = false;
+                _currentGeofencePoints.clear();
+                _isDragging = false;
+                _draggedPointIndex = null;
+              });
+              Navigator.pop(context);
+            },
+            child: const Text('Cancel'),
           ),
+          TextButton(
+            onPressed: _isSavingGeofence
+                ? null
+                : () async {
+                    final name = _geofenceNameController.text.trim();
+                    final validationError = GeofenceUtils.validateGeofence(
+                      name,
+                      _currentGeofencePoints,
+                    );
+
+                    if (validationError != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(validationError),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+
+                    await _createGeofence(name);
+                    Navigator.pop(context);
+                  },
+            child: _isSavingGeofence
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Create'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -429,10 +355,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
     try {
       // Convert LatLng points to the format expected by Supabase
-      final points =
-          _currentGeofencePoints
-              .map((point) => {'lat': point.latitude, 'lng': point.longitude})
-              .toList();
+      final points = _currentGeofencePoints
+          .map((point) => {'lat': point.latitude, 'lng': point.longitude})
+          .toList();
 
       final color = GeofenceUtils.getRandomColor(_geofences.length);
       final colorHex = '#${color.value.toRadixString(16).substring(2)}';
@@ -554,145 +479,142 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   void _showGeofencesList() {
     showModalBottomSheet(
       context: context,
-      builder:
-          (context) => Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                const Text(
+                  'Geofences',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Geofences',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                    if (_isLoadingGeofences)
+                      const Padding(
+                        padding: EdgeInsets.only(right: 8.0),
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
                       ),
+                    IconButton(
+                      onPressed: _loadGeofences,
+                      icon: const Icon(Icons.refresh),
                     ),
-                    Row(
-                      children: [
-                        if (_isLoadingGeofences)
-                          const Padding(
-                            padding: EdgeInsets.only(right: 8.0),
-                            child: SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          ),
-                        IconButton(
-                          onPressed: _loadGeofences,
-                          icon: const Icon(Icons.refresh),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.close),
-                        ),
-                      ],
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child:
-                      _geofences.isEmpty
-                          ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.layers_outlined,
-                                  size: 48,
-                                  color: Colors.grey,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  _isLoadingGeofences
-                                      ? 'Loading geofences...'
-                                      : 'No geofences created yet',
-                                  style: TextStyle(color: Colors.grey),
-                                ),
-                                if (!_isLoadingGeofences) ...[
-                                  const SizedBox(height: 8),
-                                  const Text(
-                                    'Tap the draw button to create your first geofence',
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          )
-                          : ListView.builder(
-                            itemCount: _geofences.length,
-                            itemBuilder: (context, index) {
-                              final geofence = _geofences[index];
-                              return Card(
-                                child: ListTile(
-                                  leading: Container(
-                                    width: 20,
-                                    height: 20,
-                                    decoration: BoxDecoration(
-                                      color: geofence.color,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  title: Text(geofence.name),
-                                  subtitle: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        '${geofence.points.length} points • ${geofence.isActive ? "Active" : "Inactive"}',
-                                      ),
-                                      Text(
-                                        'Created: ${geofence.createdAt.day}/${geofence.createdAt.month}/${geofence.createdAt.year}',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  isThreeLine: true,
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Switch(
-                                        value: geofence.isActive,
-                                        onChanged: (value) async {
-                                          await _toggleGeofenceStatus(
-                                            geofence.id,
-                                            value,
-                                          );
-                                        },
-                                      ),
-                                      IconButton(
-                                        onPressed: () async {
-                                          await _deleteGeofence(
-                                            geofence.id,
-                                            index,
-                                          );
-                                          Navigator.pop(context);
-                                        },
-                                        icon: const Icon(
-                                          Icons.delete,
-                                          color: Colors.red,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                ),
               ],
             ),
-          ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: _geofences.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.layers_outlined,
+                            size: 48,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _isLoadingGeofences
+                                ? 'Loading geofences...'
+                                : 'No geofences created yet',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                          if (!_isLoadingGeofences) ...[
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Tap the draw button to create your first geofence',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: _geofences.length,
+                      itemBuilder: (context, index) {
+                        final geofence = _geofences[index];
+                        return Card(
+                          child: ListTile(
+                            leading: Container(
+                              width: 20,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: geofence.color,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            title: Text(geofence.name),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${geofence.points.length} points • ${geofence.isActive ? "Active" : "Inactive"}',
+                                ),
+                                Text(
+                                  'Created: ${geofence.createdAt.day}/${geofence.createdAt.month}/${geofence.createdAt.year}',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            isThreeLine: true,
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Switch(
+                                  value: geofence.isActive,
+                                  onChanged: (value) async {
+                                    await _toggleGeofenceStatus(
+                                      geofence.id,
+                                      value,
+                                    );
+                                  },
+                                ),
+                                IconButton(
+                                  onPressed: () async {
+                                    await _deleteGeofence(
+                                      geofence.id,
+                                      index,
+                                    );
+                                    Navigator.pop(context);
+                                  },
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -751,9 +673,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     await _checkLocationService();
     if (_isLocationServiceEnabled) {
       await _getCurrentLocation();
-      if (_currentPosition != null && !_isTrackingLocation) {
-        _startLocationTracking();
-      }
     }
 
     setState(() {
@@ -898,8 +817,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 onPressed: _isGettingLocation ? null : _refreshLocation,
                 icon: Icon(
                   Icons.refresh,
-                  color:
-                      _isGettingLocation ? Colors.grey : Colors.grey.shade700,
+                  color: _isGettingLocation ? Colors.grey : Colors.grey.shade700,
                 ),
               ),
             ],
@@ -910,8 +828,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         if (_isDrawingGeofence)
           Container(
             padding: const EdgeInsets.all(16),
-            color:
-                _isDragging ? Colors.orange.shade200 : Colors.orange.shade100,
+            color: _isDragging ? Colors.orange.shade200 : Colors.orange.shade100,
             child: Column(
               children: [
                 Row(
@@ -989,13 +906,12 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                   FlutterMap(
                     mapController: _mapController,
                     options: MapOptions(
-                      center:
-                          _currentPosition != null
-                              ? LatLng(
-                                _currentPosition!.latitude,
-                                _currentPosition!.longitude,
-                              )
-                              : LatLng(8.9511, 125.5439),
+                      center: _currentPosition != null
+                          ? LatLng(
+                              _currentPosition!.latitude,
+                              _currentPosition!.longitude,
+                            )
+                          : LatLng(8.9511, 125.5439),
                       zoom: 15.0,
                       minZoom: 10.0,
                       maxZoom: 18.0,
@@ -1027,10 +943,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                             Polygon(
                               points: _currentGeofencePoints,
                               color: Colors.orange.withOpacity(0.2),
-                              borderColor:
-                                  _isDragging
-                                      ? Colors.orange.shade700
-                                      : Colors.orange,
+                              borderColor: _isDragging
+                                  ? Colors.orange.shade700
+                                  : Colors.orange,
                               borderStrokeWidth: _isDragging ? 3.0 : 2.0,
                             ),
                         ],
@@ -1039,75 +954,49 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                       // Geofence markers for drawing with enhanced visuals
                       if (_currentGeofencePoints.isNotEmpty)
                         MarkerLayer(
-                          markers:
-                              _currentGeofencePoints
-                                  .asMap()
-                                  .entries
-                                  .map(
-                                    (entry) => Marker(
-                                      point: entry.value,
-                                      width:
-                                          _draggedPointIndex == entry.key
-                                              ? 28
-                                              : 24,
-                                      height:
-                                          _draggedPointIndex == entry.key
-                                              ? 28
-                                              : 24,
-                                      builder:
-                                          (context) => Container(
-                                            width:
-                                                _draggedPointIndex == entry.key
-                                                    ? 28
-                                                    : 24,
-                                            height:
-                                                _draggedPointIndex == entry.key
-                                                    ? 28
-                                                    : 24,
-                                            decoration: BoxDecoration(
-                                              color:
-                                                  _draggedPointIndex ==
-                                                          entry.key
-                                                      ? Colors.orange.shade700
-                                                      : Colors.orange,
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: Colors.white,
-                                                width:
-                                                    _draggedPointIndex ==
-                                                            entry.key
-                                                        ? 3
-                                                        : 2,
-                                              ),
-                                              boxShadow: [
-                                                if (_draggedPointIndex ==
-                                                    entry.key)
-                                                  BoxShadow(
-                                                    color: Colors.orange
-                                                        .withOpacity(0.5),
-                                                    blurRadius: 8,
-                                                    spreadRadius: 2,
-                                                  ),
-                                              ],
-                                            ),
-                                            child: Center(
-                                              child: Text(
-                                                '${entry.key + 1}',
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize:
-                                                      _draggedPointIndex ==
-                                                              entry.key
-                                                          ? 12
-                                                          : 10,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
+                          markers: _currentGeofencePoints
+                              .asMap()
+                              .entries
+                              .map(
+                                (entry) => Marker(
+                                  point: entry.value,
+                                  width: _draggedPointIndex == entry.key ? 28 : 24,
+                                  height: _draggedPointIndex == entry.key ? 28 : 24,
+                                  builder: (context) => Container(
+                                    width: _draggedPointIndex == entry.key ? 28 : 24,
+                                    height: _draggedPointIndex == entry.key ? 28 : 24,
+                                    decoration: BoxDecoration(
+                                      color: _draggedPointIndex == entry.key
+                                          ? Colors.orange.shade700
+                                          : Colors.orange,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: _draggedPointIndex == entry.key ? 3 : 2,
+                                      ),
+                                      boxShadow: [
+                                        if (_draggedPointIndex == entry.key)
+                                          BoxShadow(
+                                            color: Colors.orange.withOpacity(0.5),
+                                            blurRadius: 8,
+                                            spreadRadius: 2,
                                           ),
+                                      ],
                                     ),
-                                  )
-                                  .toList(),
+                                    child: Center(
+                                      child: Text(
+                                        '${entry.key + 1}',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: _draggedPointIndex == entry.key ? 12 : 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
                         ),
 
                       // Connection lines between points (when drawing)
@@ -1125,19 +1014,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                           ],
                         ),
 
-                      // Location History Polyline
-                      if (_locationHistory.length > 1)
-                        PolylineLayer(
-                          polylines: [
-                            Polyline(
-                              points: _locationHistory,
-                              strokeWidth: 3.0,
-                              color: Colors.blue.withOpacity(0.7),
-                            ),
-                          ],
-                        ),
-
-                      // Current Location Marker with accuracy circle
+                      // Current Location Marker with accuracy circle (static display only)
                       if (_currentPosition != null)
                         CircleLayer(
                           circles: [
@@ -1156,7 +1033,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                           ],
                         ),
 
-                      // Current Location Marker
+                      // Current Location Marker (static display only)
                       if (_currentPosition != null)
                         MarkerLayer(
                           markers: [
@@ -1167,78 +1044,46 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                               ),
                               width: 30,
                               height: 30,
-                              builder:
-                                  (context) => Container(
-                                    width: 30,
-                                    height: 30,
+                              builder: (context) => Container(
+                                width: 30,
+                                height: 30,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.3),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Container(
+                                  margin: const EdgeInsets.all(3),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.blue.shade600,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Container(
+                                    margin: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       color: Colors.white,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.3),
-                                          blurRadius: 6,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Container(
-                                      margin: const EdgeInsets.all(3),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.blue.shade600,
-                                        border: Border.all(
-                                          color: Colors.white,
-                                          width: 2,
-                                        ),
-                                      ),
-                                      child: Container(
-                                        margin: const EdgeInsets.all(6),
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: Colors.white,
-                                        ),
-                                      ),
                                     ),
                                   ),
-                            ),
-                            // Direction indicator (if speed > 1 m/s)
-                            if (_currentPosition!.speed > 1.0)
-                              Marker(
-                                point: LatLng(
-                                  _currentPosition!.latitude,
-                                  _currentPosition!.longitude,
                                 ),
-                                width: 60,
-                                height: 60,
-                                builder:
-                                    (context) => Transform.rotate(
-                                      angle:
-                                          (_currentPosition!.heading *
-                                              3.141592653589793) /
-                                          180,
-                                      child: Icon(
-                                        Icons.navigation,
-                                        color: Colors.blue.shade700,
-                                        size: 30,
-                                        shadows: [
-                                          Shadow(
-                                            color: Colors.black.withOpacity(
-                                              0.5,
-                                            ),
-                                            offset: const Offset(1, 1),
-                                            blurRadius: 2,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
                               ),
+                            ),
                           ],
                         ),
                     ],
                   ),
 
-                  // Map controls
+                  // Map controls (removed tracking toggle button)
                   Positioned(
                     top: 16,
                     right: 16,
@@ -1276,57 +1121,26 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                         FloatingActionButton.small(
                           heroTag: "my_location",
                           onPressed: _centerMapOnCurrentLocation,
-                          backgroundColor:
-                              _isTrackingLocation
-                                  ? Colors.blue.shade100
-                                  : Colors.white,
+                          backgroundColor: Colors.white,
                           child: Icon(
                             Icons.my_location,
-                            color:
-                                _isTrackingLocation
-                                    ? Colors.blue
-                                    : Colors.black54,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        FloatingActionButton.small(
-                          heroTag: "tracking_toggle",
-                          onPressed: () {
-                            if (_isTrackingLocation) {
-                              _stopLocationTracking();
-                            } else {
-                              _startLocationTracking();
-                            }
-                          },
-                          backgroundColor:
-                              _isTrackingLocation
-                                  ? Colors.red.shade100
-                                  : Colors.green.shade100,
-                          child: Icon(
-                            _isTrackingLocation
-                                ? Icons.pause
-                                : Icons.play_arrow,
-                            color:
-                                _isTrackingLocation ? Colors.red : Colors.green,
+                            color: Colors.black54,
                           ),
                         ),
                         const SizedBox(height: 8),
                         FloatingActionButton.small(
                           heroTag: "draw_geofence",
-                          onPressed:
-                              _isDrawingGeofence
-                                  ? _stopDrawingGeofence
-                                  : _startDrawingGeofence,
-                          backgroundColor:
-                              _isDrawingGeofence
-                                  ? Colors.orange.shade100
-                                  : Colors.white,
+                          onPressed: _isDrawingGeofence
+                              ? _stopDrawingGeofence
+                              : _startDrawingGeofence,
+                          backgroundColor: _isDrawingGeofence
+                              ? Colors.orange.shade100
+                              : Colors.white,
                           child: Icon(
                             _isDrawingGeofence ? Icons.stop : Icons.draw,
-                            color:
-                                _isDrawingGeofence
-                                    ? Colors.orange
-                                    : Colors.black54,
+                            color: _isDrawingGeofence
+                                ? Colors.orange
+                                : Colors.black54,
                           ),
                         ),
                         // Clear current geofence button (only when drawing)
@@ -1356,69 +1170,56 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                     ),
                   ),
 
-                  // Enhanced location info overlay
-                  if (_currentPosition != null)
-                    Positioned(
-                      bottom: 16,
-                      left: 16,
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
+                  // Simplified info overlay (removed location-related info)
+                  Positioned(
+                    bottom: 16,
+                    left: 16,
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Map Info',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Geofences: ${_geofences.length}',
+                            style: const TextStyle(fontSize: 10),
+                          ),
+                          if (_isDrawingGeofence) ...[
+                            const Divider(height: 8),
                             Text(
-                              'Current Location',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey.shade700,
+                              'Drawing: ${_currentGeofencePoints.length} points',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Colors.orange,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Accuracy: ${_currentPosition!.accuracy.toStringAsFixed(1)}m',
-                              style: const TextStyle(fontSize: 10),
-                            ),
-                            Text(
-                              'Speed: ${_currentPosition!.speed.toStringAsFixed(1)}m/s',
-                              style: const TextStyle(fontSize: 10),
-                            ),
-                            Text(
-                              'History: ${_locationHistory.length} points',
-                              style: const TextStyle(fontSize: 10),
-                            ),
-                            Text(
-                              'Geofences: ${_geofences.length}',
-                              style: const TextStyle(fontSize: 10),
-                            ),
-                            if (_isDrawingGeofence) ...[
-                              const Divider(height: 8),
+                            if (_isDragging)
                               Text(
-                                'Drawing: ${_currentGeofencePoints.length} points',
+                                'Dragging point ${_draggedPointIndex! + 1}',
                                 style: const TextStyle(
                                   fontSize: 10,
                                   color: Colors.orange,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              if (_isDragging)
-                                Text(
-                                  'Dragging point ${_draggedPointIndex! + 1}',
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.orange,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                            ],
                           ],
-                        ),
+                        ],
                       ),
                     ),
+                  ),
 
                   // Loading overlay for getting location
                   if (_isGettingLocation && _isLocationServiceEnabled)

@@ -4,7 +4,6 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'profile_screen.dart';
-import 'connections_screen.dart';
 import '../services/geofence_service.dart'; // Add this import
 
 class MainScreen extends StatefulWidget {
@@ -780,7 +779,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         index: _selectedIndex,
         children: [
           _buildHomeScreen(),
-          const ConnectionsScreen(),
           const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -826,10 +824,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.people),
-              label: 'Connections',
-            ),
             BottomNavigationBarItem(
               icon: Icon(Icons.notifications),
               label: 'Notifications',

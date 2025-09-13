@@ -4,8 +4,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'profile_screen.dart';
-import 'connections_screen.dart';
-import '../services/geofence_service.dart'; // Add this import
+import 'device_screen.dart';
+import '../services/geofence_service.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key}) : super(key: key);
@@ -284,23 +284,11 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         );
 
         if (isInside) {
-          _showGeofenceAlert(geofence.name, "Entered", Colors.green);
+          print('Entered geofence: ${geofence.name}');
         } else {
-          _showGeofenceAlert(geofence.name, "Exited", Colors.red);
+          print('Exited geofence: ${geofence.name}');
         }
       }
-    }
-  }
-
-  void _showGeofenceAlert(String geofenceName, String action, Color color) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$action geofence: $geofenceName'),
-          backgroundColor: color,
-          duration: const Duration(seconds: 3),
-        ),
-      );
     }
   }
 
@@ -780,7 +768,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         index: _selectedIndex,
         children: [
           _buildHomeScreen(),
-          const ConnectionsScreen(),
+          const DeviceScreen(),
           const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -827,8 +815,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
             BottomNavigationBarItem(
-              icon: Icon(Icons.people),
-              label: 'Connections',
+              icon: Icon(Icons.devices),
+              label: 'Devices',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.notifications),
@@ -979,7 +967,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             ),
           ),
 
-        // Map Container (rest of the build method remains the same)
+        // Map Container
         Expanded(
           child: Container(
             margin: const EdgeInsets.all(16),

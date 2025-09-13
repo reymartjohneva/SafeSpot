@@ -4,7 +4,6 @@ import 'pages/login_page.dart';
 import 'screens/home_screen.dart';
 import 'pages/registration_page.dart';
 import 'services/auth_service.dart';
-import 'services/friend_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,7 +12,6 @@ void main() async {
     anonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpibm51c21qcHd2dHNpZ3Z2bGhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3NTgwODQsImV4cCI6MjA2OTMzNDA4NH0.GWG-9PLnpYU2-foc8wI7fzPza746TGVgmMgab2geZvk',
   );
-  await FriendService.init();
 
   runApp(const MyApp());
 }

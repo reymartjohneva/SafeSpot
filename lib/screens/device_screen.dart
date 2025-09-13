@@ -28,7 +28,9 @@ class _DeviceScreenState extends State<DeviceScreen>
   String? _selectedDeviceId;
 
   Timer? _refreshTimer;
-  static const Duration _refreshInterval = Duration(seconds: 30); // Refresh every 30 seconds
+  static const Duration _refreshInterval = Duration(
+    seconds: 30,
+  ); // Refresh every 30 seconds
 
   @override
   void initState() {
@@ -94,16 +96,16 @@ class _DeviceScreenState extends State<DeviceScreen>
       for (var device in devices) {
         await _loadDeviceLocationHistory(device.deviceId);
       }
-      
+
       // Restart auto-refresh after loading
       _stopAutoRefresh();
       _startAutoRefresh();
     } catch (e) {
       print('Error loading devices: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load devices: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load devices: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -377,12 +379,23 @@ class _DeviceScreenState extends State<DeviceScreen>
                               children: [
                                 Text('ID: ${device.deviceId}'),
                                 Text('Added: ${_formatDate(device.createdAt)}'),
-                                if (latestLocation != null)
+                                if (latestLocation != null) ...[
                                   Text(
                                     'Last seen: ${_formatDate(latestLocation.createdAt)}',
                                     style: const TextStyle(color: Colors.green),
-                                  )
-                                else
+                                  ),
+                                  if (latestLocation.speed != null)
+                                    Text(
+                                      'Last speed: ${_formatSpeed(latestLocation.speed!)}',
+                                      style: TextStyle(
+                                        color: _getSpeedColor(
+                                          latestLocation.speed,
+                                        ),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                ] else
                                   const Text(
                                     'No location data',
                                     style: TextStyle(color: Colors.orange),
@@ -597,7 +610,10 @@ class _DeviceScreenState extends State<DeviceScreen>
                               child: Container(
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: _getDeviceColor(device.deviceId),
+                                  color:
+                                      latestLocation.speed != null
+                                          ? _getSpeedColor(latestLocation.speed)
+                                          : _getDeviceColor(device.deviceId),
                                   border: Border.all(
                                     color:
                                         isSelected
@@ -717,6 +733,18 @@ class _DeviceScreenState extends State<DeviceScreen>
                                         'Last seen: ${_formatDate(latestLocation.createdAt)}',
                                         style: const TextStyle(fontSize: 10),
                                       ),
+                                      // Add speed information
+                                      if (latestLocation.speed != null)
+                                        Text(
+                                          'Speed: ${_formatSpeed(latestLocation.speed!)}',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: _getSpeedColor(
+                                              latestLocation.speed,
+                                            ),
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
                                       Text(
                                         'History: ${locations.length} points',
                                         style: const TextStyle(fontSize: 10),
@@ -882,6 +910,63 @@ class _DeviceScreenState extends State<DeviceScreen>
                     const Text('Path', style: TextStyle(fontSize: 10)),
                   ],
                 ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Speed Colors:',
+                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.red,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    const Text('<5', style: TextStyle(fontSize: 8)),
+                    const SizedBox(width: 4),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.orange,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    const Text('5-30', style: TextStyle(fontSize: 8)),
+                    const SizedBox(width: 4),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.blue,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    const Text('30-60', style: TextStyle(fontSize: 8)),
+                    const SizedBox(width: 4),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.green,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    const Text('>60', style: TextStyle(fontSize: 8)),
+                  ],
+                ),
+                const Text(
+                  'km/h',
+                  style: TextStyle(fontSize: 8, color: Colors.grey),
+                ),
               ],
             ),
           ),
@@ -921,6 +1006,25 @@ class _DeviceScreenState extends State<DeviceScreen>
       // For older dates, show full format
       return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
     }
+  }
+
+  // Add speed formatting method
+  String _formatSpeed(double speedMps) {
+    // Convert m/s to km/h
+    final speedKmh = speedMps * 3.6;
+    return '${speedKmh.toStringAsFixed(1)} km/h';
+  }
+
+  // Add speed color coding method
+  Color _getSpeedColor(double? speed) {
+    if (speed == null) return Colors.grey;
+
+    final speedKmh = speed * 3.6; // Convert to km/h
+
+    if (speedKmh < 5) return Colors.red; // Stationary/slow
+    if (speedKmh < 30) return Colors.orange; // Walking/cycling
+    if (speedKmh < 60) return Colors.blue; // City driving
+    return Colors.green; // Highway speeds
   }
 
   Color _getDeviceColor(String deviceId) {

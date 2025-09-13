@@ -134,12 +134,14 @@ class DeviceService {
     required String deviceId,
     required double latitude,
     required double longitude,
+    double? speed, // Add optional speed parameter
   }) async {
     try {
       await _supabase.from('location_history').insert({
         'child_id': deviceId,
         'latitude': latitude,
         'longitude': longitude,
+        'speed': speed, // Include speed in insert
       });
     } catch (e) {
       throw Exception('Failed to save location: $e');
@@ -198,6 +200,7 @@ class LocationHistory {
   final double latitude;
   final double longitude;
   final DateTime createdAt;
+  final double? speed; // Add speed field (nullable)
 
   LocationHistory({
     required this.id,
@@ -205,6 +208,7 @@ class LocationHistory {
     required this.latitude,
     required this.longitude,
     required this.createdAt,
+    this.speed, // Make it optional
   });
 
   factory LocationHistory.fromJson(Map<String, dynamic> json) {
@@ -214,6 +218,18 @@ class LocationHistory {
       latitude: json['latitude'].toDouble(),
       longitude: json['longitude'].toDouble(),
       createdAt: DateTime.parse(json['created_at']),
+      speed: json['speed']?.toDouble(), // Handle null values
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'child_id': childId,
+      'latitude': latitude,
+      'longitude': longitude,
+      'created_at': createdAt.toIso8601String(),
+      'speed': speed,
+    };
   }
 }

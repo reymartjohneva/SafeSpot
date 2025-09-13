@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'dart:async'; // Add this import
 import '../services/device_service.dart';
 
 class DeviceScreen extends StatefulWidget {
@@ -26,19 +27,59 @@ class _DeviceScreenState extends State<DeviceScreen>
   bool _isAddingDevice = false;
   String? _selectedDeviceId;
 
+  Timer? _refreshTimer;
+  static const Duration _refreshInterval = Duration(seconds: 30); // Refresh every 30 seconds
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _loadDevices();
+    _startAutoRefresh(); // Start auto-refresh
   }
 
   @override
   void dispose() {
+    _refreshTimer?.cancel(); // Cancel timer when disposing
     _tabController.dispose();
     _deviceIdController.dispose();
     _deviceNameController.dispose();
     super.dispose();
+  }
+
+  void _startAutoRefresh() {
+    _refreshTimer = Timer.periodic(_refreshInterval, (timer) {
+      if (mounted && DeviceService.isAuthenticated) {
+        _loadDeviceLocationsOnly(); // Only refresh location data, not device list
+      }
+    });
+  }
+
+  void _stopAutoRefresh() {
+    _refreshTimer?.cancel();
+    _refreshTimer = null;
+  }
+
+  // New method to only refresh location data (faster than full reload)
+  Future<void> _loadDeviceLocationsOnly() async {
+    if (!DeviceService.isAuthenticated) return;
+
+    try {
+      for (var device in _devices) {
+        final history = await DeviceService.getDeviceLocationHistory(
+          deviceId: device.deviceId,
+          limit: 100,
+        );
+        if (mounted) {
+          setState(() {
+            _deviceLocations[device.deviceId] = history;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error refreshing location data: $e');
+      // Don't show snackbar for background refresh errors
+    }
   }
 
   Future<void> _loadDevices() async {
@@ -53,12 +94,16 @@ class _DeviceScreenState extends State<DeviceScreen>
       for (var device in devices) {
         await _loadDeviceLocationHistory(device.deviceId);
       }
+      
+      // Restart auto-refresh after loading
+      _stopAutoRefresh();
+      _startAutoRefresh();
     } catch (e) {
       print('Error loading devices: $e');
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to load devices: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load devices: $e')),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -846,7 +891,36 @@ class _DeviceScreenState extends State<DeviceScreen>
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    // Format: DD/MM/YYYY HH:MM:SS
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
+  }
+
+  // Alternative: 12-hour format with AM/PM
+  String _formatDateWithAmPm(DateTime date) {
+    final hour12 =
+        date.hour == 0 ? 12 : (date.hour > 12 ? date.hour - 12 : date.hour);
+    final amPm = date.hour >= 12 ? 'PM' : 'AM';
+
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${hour12.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')} $amPm';
+  }
+
+  // More user-friendly format that shows relative time for recent entries
+  String _formatDateSmart(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inMinutes < 1) {
+      return 'Just now';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} min ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours} hr ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    } else {
+      // For older dates, show full format
+      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    }
   }
 
   Color _getDeviceColor(String deviceId) {

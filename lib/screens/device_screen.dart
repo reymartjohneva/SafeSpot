@@ -256,8 +256,9 @@ class _DeviceScreenState extends State<DeviceScreen>
   Widget _buildDevicesTab() {
     return Column(
       children: [
-        // Add device section
+        // Add device section - Fixed container padding to prevent overflow
         Container(
+          width: double.infinity,
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,6 +275,7 @@ class _DeviceScreenState extends State<DeviceScreen>
                   hintText: 'Enter unique device identifier',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.perm_device_information),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
                 enabled: !_isAddingDevice,
               ),
@@ -285,6 +287,7 @@ class _DeviceScreenState extends State<DeviceScreen>
                   hintText: 'Enter a friendly name for this device',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.label),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
                 enabled: !_isAddingDevice,
               ),
@@ -373,11 +376,17 @@ class _DeviceScreenState extends State<DeviceScreen>
                                 color: Colors.white,
                               ),
                             ),
-                            title: Text(device.deviceName),
+                            title: Text(
+                              device.deviceName,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('ID: ${device.deviceId}'),
+                                Text(
+                                  'ID: ${device.deviceId}',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                                 Text('Added: ${_formatDate(device.createdAt)}'),
                                 if (latestLocation != null) ...[
                                   Text(
@@ -453,525 +462,571 @@ class _DeviceScreenState extends State<DeviceScreen>
   }
 
   Widget _buildMapTab() {
-    return Stack(
-      children: [
-        FlutterMap(
-          mapController: _mapController,
-          options: MapOptions(
-            center: LatLng(8.9511, 125.5439), // Default center
-            zoom: 13.0,
-            minZoom: 5.0,
-            maxZoom: 18.0,
-          ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Stack(
           children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.example.safespot',
-            ),
+            FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                center: LatLng(8.9511, 125.5439), // Default center
+                zoom: 13.0,
+                minZoom: 5.0,
+                maxZoom: 18.0,
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.example.safespot',
+                ),
 
-            // Location history lines (polylines) for each device
-            PolylineLayer(
-              polylines:
-                  _deviceLocations.entries
-                      .where((entry) => entry.value.length > 1)
-                      .map((entry) {
+                // Location history lines (polylines) for each device
+                PolylineLayer(
+                  polylines:
+                      _deviceLocations.entries
+                          .where((entry) => entry.value.length > 1)
+                          .map((entry) {
+                            final deviceId = entry.key;
+                            final locations = entry.value;
+                            final device = _findDeviceById(deviceId);
+
+                            if (device == null) return null;
+
+                            final isSelected =
+                                _selectedDeviceId == null ||
+                                _selectedDeviceId == deviceId;
+
+                            if (!isSelected) return null;
+
+                            final points =
+                                locations.reversed
+                                    .map(
+                                      (location) => LatLng(
+                                        location.latitude,
+                                        location.longitude,
+                                      ),
+                                    )
+                                    .toList();
+
+                            return Polyline(
+                              points: points,
+                              strokeWidth:
+                                  isSelected && _selectedDeviceId == deviceId
+                                      ? 3.0
+                                      : 2.0,
+                              color: _getDeviceColor(
+                                device.deviceId,
+                              ).withOpacity(0.7),
+                            );
+                          })
+                          .where((polyline) => polyline != null)
+                          .cast<Polyline>()
+                          .toList(),
+                ),
+
+                // Historical location markers (small dots)
+                MarkerLayer(
+                  markers:
+                      _deviceLocations.entries.expand((entry) {
                         final deviceId = entry.key;
                         final locations = entry.value;
                         final device = _findDeviceById(deviceId);
 
-                        if (device == null) return null;
+                        if (device == null) return <Marker>[];
 
                         final isSelected =
                             _selectedDeviceId == null ||
                             _selectedDeviceId == deviceId;
 
-                        if (!isSelected) return null;
+                        if (!isSelected || locations.isEmpty) return <Marker>[];
 
-                        final points =
-                            locations.reversed
-                                .map(
-                                  (location) => LatLng(
-                                    location.latitude,
-                                    location.longitude,
-                                  ),
-                                )
-                                .toList();
-
-                        return Polyline(
-                          points: points,
-                          strokeWidth:
-                              isSelected && _selectedDeviceId == deviceId
-                                  ? 3.0
-                                  : 2.0,
-                          color: _getDeviceColor(
-                            device.deviceId,
-                          ).withOpacity(0.7),
-                        );
-                      })
-                      .where((polyline) => polyline != null)
-                      .cast<Polyline>()
-                      .toList(),
-            ),
-
-            // Historical location markers (small dots)
-            MarkerLayer(
-              markers:
-                  _deviceLocations.entries.expand((entry) {
-                    final deviceId = entry.key;
-                    final locations = entry.value;
-                    final device = _findDeviceById(deviceId);
-
-                    if (device == null) return <Marker>[];
-
-                    final isSelected =
-                        _selectedDeviceId == null ||
-                        _selectedDeviceId == deviceId;
-
-                    if (!isSelected || locations.isEmpty) return <Marker>[];
-
-                    final locationsList = locations.skip(1).toList();
-                    return locationsList.map((location) {
-                      return Marker(
-                        point: LatLng(location.latitude, location.longitude),
-                        width: 12,
-                        height: 12,
-                        builder:
-                            (context) => Container(
-                              width: 12,
-                              height: 12,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: _getDeviceColor(device.deviceId),
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 1,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    blurRadius: 2,
-                                    offset: const Offset(0, 1),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: Container(
-                                  width: 4,
-                                  height: 4,
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                      );
-                    }).toList();
-                  }).toList(),
-            ),
-
-            // Latest location markers (bigger, with device info)
-            MarkerLayer(
-              markers:
-                  _deviceLocations.entries.expand((entry) {
-                    final deviceId = entry.key;
-                    final locations = entry.value;
-                    if (locations.isEmpty) return <Marker>[];
-
-                    final device = _findDeviceById(deviceId);
-                    if (device == null) return <Marker>[];
-
-                    final latestLocation = locations.first;
-                    final isSelected = _selectedDeviceId == deviceId;
-                    final isVisible =
-                        _selectedDeviceId == null ||
-                        _selectedDeviceId == deviceId;
-
-                    if (!isVisible) return <Marker>[];
-
-                    return [
-                      Marker(
-                        point: LatLng(
-                          latestLocation.latitude,
-                          latestLocation.longitude,
-                        ),
-                        width: isSelected ? 60 : 50,
-                        height: isSelected ? 60 : 50,
-                        builder:
-                            (context) => GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _selectedDeviceId =
-                                      _selectedDeviceId == deviceId
-                                          ? null
-                                          : deviceId;
-                                });
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color:
-                                      latestLocation.speed != null
-                                          ? _getSpeedColor(latestLocation.speed)
-                                          : _getDeviceColor(device.deviceId),
-                                  border: Border.all(
-                                    color:
-                                        isSelected
-                                            ? Colors.yellow
-                                            : Colors.white,
-                                    width: isSelected ? 4 : 3,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.3),
-                                      blurRadius: isSelected ? 8 : 6,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      device.isActive
-                                          ? Icons.phone_android
-                                          : Icons.phone_android_outlined,
-                                      color: Colors.white,
-                                      size: isSelected ? 20 : 16,
-                                    ),
-                                    if (isSelected) ...[
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        device.deviceName.length > 8
-                                            ? '${device.deviceName.substring(0, 8)}...'
-                                            : device.deviceName,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 8,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ] else
-                                      Text(
-                                        device.deviceName.isNotEmpty
-                                            ? device.deviceName
-                                                .substring(0, 1)
-                                                .toUpperCase()
-                                            : '?',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                      ),
-                    ];
-                  }).toList(),
-            ),
-
-            // Device info popup for selected device
-            if (_selectedDeviceId != null &&
-                _deviceLocations[_selectedDeviceId]?.isNotEmpty == true)
-              MarkerLayer(
-                markers:
-                    [
-                      () {
-                        final locations = _deviceLocations[_selectedDeviceId]!;
-                        final device = _findDeviceById(_selectedDeviceId!);
-                        if (device == null) return null;
-
-                        final latestLocation = locations.first;
-
-                        return Marker(
-                          point: LatLng(
-                            latestLocation.latitude,
-                            latestLocation.longitude,
-                          ),
-                          width: 200,
-                          height: 100,
-                          builder:
-                              (context) => Transform.translate(
-                                offset: const Offset(0, -80),
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
+                        final locationsList = locations.skip(1).toList();
+                        return locationsList.map((location) {
+                          return Marker(
+                            point: LatLng(location.latitude, location.longitude),
+                            width: 12,
+                            height: 12,
+                            builder:
+                                (context) => Container(
+                                  width: 12,
+                                  height: 12,
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(8),
+                                    shape: BoxShape.circle,
+                                    color: _getDeviceColor(device.deviceId),
                                     border: Border.all(
-                                      color: _getDeviceColor(device.deviceId),
+                                      color: Colors.white,
+                                      width: 1,
                                     ),
                                     boxShadow: [
                                       BoxShadow(
                                         color: Colors.black.withOpacity(0.2),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
+                                        blurRadius: 2,
+                                        offset: const Offset(0, 1),
                                       ),
                                     ],
                                   ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        device.deviceName,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                        ),
+                                  child: Center(
+                                    child: Container(
+                                      width: 4,
+                                      height: 4,
+                                      decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.white,
                                       ),
-                                      Text(
-                                        'ID: ${device.deviceId}',
-                                        style: const TextStyle(fontSize: 10),
-                                      ),
-                                      Text(
-                                        'Last seen: ${_formatDate(latestLocation.createdAt)}',
-                                        style: const TextStyle(fontSize: 10),
-                                      ),
-                                      // Add speed information
-                                      if (latestLocation.speed != null)
-                                        Text(
-                                          'Speed: ${_formatSpeed(latestLocation.speed!)}',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: _getSpeedColor(
-                                              latestLocation.speed,
-                                            ),
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      Text(
-                                        'History: ${locations.length} points',
-                                        style: const TextStyle(fontSize: 10),
-                                      ),
-                                      Text(
-                                        'Status: ${device.isActive ? "Active" : "Inactive"}',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color:
-                                              device.isActive
-                                                  ? Colors.green
-                                                  : Colors.orange,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                        );
-                      }(),
-                    ].where((marker) => marker != null).cast<Marker>().toList(),
-              ),
-          ],
-        ),
-
-        // Device selector
-        Positioned(
-          top: 16,
-          left: 16,
-          right: 16,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
+                          );
+                        }).toList();
+                      }).toList(),
                 ),
+
+                // Latest location markers (bigger, with device info)
+                MarkerLayer(
+                  markers:
+                      _deviceLocations.entries.expand((entry) {
+                        final deviceId = entry.key;
+                        final locations = entry.value;
+                        if (locations.isEmpty) return <Marker>[];
+
+                        final device = _findDeviceById(deviceId);
+                        if (device == null) return <Marker>[];
+
+                        final latestLocation = locations.first;
+                        final isSelected = _selectedDeviceId == deviceId;
+                        final isVisible =
+                            _selectedDeviceId == null ||
+                            _selectedDeviceId == deviceId;
+
+                        if (!isVisible) return <Marker>[];
+
+                        return [
+                          Marker(
+                            point: LatLng(
+                              latestLocation.latitude,
+                              latestLocation.longitude,
+                            ),
+                            width: isSelected ? 60 : 50,
+                            height: isSelected ? 60 : 50,
+                            builder:
+                                (context) => GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedDeviceId =
+                                          _selectedDeviceId == deviceId
+                                              ? null
+                                              : deviceId;
+                                    });
+                                  },
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color:
+                                          latestLocation.speed != null
+                                              ? _getSpeedColor(latestLocation.speed)
+                                              : _getDeviceColor(device.deviceId),
+                                      border: Border.all(
+                                        color:
+                                            isSelected
+                                                ? Colors.yellow
+                                                : Colors.white,
+                                        width: isSelected ? 4 : 3,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.3),
+                                          blurRadius: isSelected ? 8 : 6,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          device.isActive
+                                              ? Icons.phone_android
+                                              : Icons.phone_android_outlined,
+                                          color: Colors.white,
+                                          size: isSelected ? 20 : 16,
+                                        ),
+                                        if (isSelected) ...[
+                                          const SizedBox(height: 2),
+                                          Flexible(
+                                            child: Text(
+                                              device.deviceName.length > 8
+                                                  ? '${device.deviceName.substring(0, 8)}...'
+                                                  : device.deviceName,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 8,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ] else
+                                          Text(
+                                            device.deviceName.isNotEmpty
+                                                ? device.deviceName
+                                                    .substring(0, 1)
+                                                    .toUpperCase()
+                                                : '?',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                          ),
+                        ];
+                      }).toList(),
+                ),
+
+                // Device info popup for selected device
+                if (_selectedDeviceId != null &&
+                    _deviceLocations[_selectedDeviceId]?.isNotEmpty == true)
+                  MarkerLayer(
+                    markers:
+                        [
+                          () {
+                            final locations = _deviceLocations[_selectedDeviceId]!;
+                            final device = _findDeviceById(_selectedDeviceId!);
+                            if (device == null) return null;
+
+                            final latestLocation = locations.first;
+
+                            return Marker(
+                              point: LatLng(
+                                latestLocation.latitude,
+                                latestLocation.longitude,
+                              ),
+                              width: constraints.maxWidth > 300 ? 200 : constraints.maxWidth - 100,
+                              height: 120,
+                              builder:
+                                  (context) => Transform.translate(
+                                    offset: const Offset(0, -100),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      constraints: BoxConstraints(
+                                        maxWidth: constraints.maxWidth - 100,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: _getDeviceColor(device.deviceId),
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.2),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            device.deviceName,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            'ID: ${device.deviceId}',
+                                            style: const TextStyle(fontSize: 10),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            'Last seen: ${_formatDate(latestLocation.createdAt)}',
+                                            style: const TextStyle(fontSize: 10),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          // Add speed information
+                                          if (latestLocation.speed != null)
+                                            Text(
+                                              'Speed: ${_formatSpeed(latestLocation.speed!)}',
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                color: _getSpeedColor(
+                                                  latestLocation.speed,
+                                                ),
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          Text(
+                                            'History: ${locations.length} points',
+                                            style: const TextStyle(fontSize: 10),
+                                          ),
+                                          Text(
+                                            'Status: ${device.isActive ? "Active" : "Inactive"}',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color:
+                                                  device.isActive
+                                                      ? Colors.green
+                                                      : Colors.orange,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                            );
+                          }(),
+                        ].where((marker) => marker != null).cast<Marker>().toList(),
+                  ),
               ],
             ),
-            child: DropdownButton<String>(
-              value: _selectedDeviceId,
-              hint: const Text('Select device to view'),
-              isExpanded: true,
-              underline: Container(),
-              items: [
-                const DropdownMenuItem<String>(
-                  value: null,
-                  child: Text('All devices'),
+
+            // Device selector - Fixed width and positioning
+            Positioned(
+              top: 16,
+              left: 16,
+              right: 16,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                constraints: BoxConstraints(maxWidth: constraints.maxWidth - 32),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                ..._devices.map(
-                  (device) => DropdownMenuItem<String>(
-                    value: device.deviceId,
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 16,
-                          height: 16,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _getDeviceColor(device.deviceId),
-                          ),
+                child: DropdownButton<String>(
+                  value: _selectedDeviceId,
+                  hint: const Text('Select device to view'),
+                  isExpanded: true,
+                  underline: Container(),
+                  items: [
+                    const DropdownMenuItem<String>(
+                      value: null,
+                      child: Text('All devices'),
+                    ),
+                    ..._devices.map(
+                      (device) => DropdownMenuItem<String>(
+                        value: device.deviceId,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 16,
+                              height: 16,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: _getDeviceColor(device.deviceId),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                device.deviceName,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Text(
+                              '(${_deviceLocations[device.deviceId]?.length ?? 0})',
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(child: Text(device.deviceName)),
-                        Text(
-                          '(${_deviceLocations[device.deviceId]?.length ?? 0})',
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 12,
-                          ),
+                      ),
+                    ),
+                  ],
+                  onChanged: (deviceId) {
+                    setState(() {
+                      _selectedDeviceId = deviceId;
+                    });
+                    if (deviceId != null) {
+                      _centerMapOnDevice(deviceId);
+                    }
+                  },
+                ),
+              ),
+            ),
+
+            // Legend - Fixed responsive layout
+            Positioned(
+              bottom: 16,
+              left: 16,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                constraints: BoxConstraints(
+                  maxWidth: constraints.maxWidth > 400 ? 200 : constraints.maxWidth - 100,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Legend',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 2,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 12,
+                              height: 12,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.blue,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text('History', style: TextStyle(fontSize: 10)),
+                          ],
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 16,
+                              height: 16,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.blue,
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
+                              child: const Icon(
+                                Icons.phone_android,
+                                size: 8,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text('Latest', style: TextStyle(fontSize: 10)),
+                          ],
                         ),
                       ],
                     ),
-                  ),
+                    const SizedBox(height: 2),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(width: 12, height: 2, color: Colors.blue),
+                        const SizedBox(width: 4),
+                        const Text('Path', style: TextStyle(fontSize: 10)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Speed Colors:',
+                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold),
+                    ),
+                    Wrap(
+                      spacing: 4,
+                      runSpacing: 2,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.red,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            const Text('<5', style: TextStyle(fontSize: 8)),
+                          ],
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.orange,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            const Text('5-30', style: TextStyle(fontSize: 8)),
+                          ],
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.blue,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            const Text('30-60', style: TextStyle(fontSize: 8)),
+                          ],
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.green,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            const Text('>60', style: TextStyle(fontSize: 8)),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const Text(
+                      'km/h',
+                      style: TextStyle(fontSize: 8, color: Colors.grey),
+                    ),
+                  ],
                 ),
-              ],
-              onChanged: (deviceId) {
-                setState(() {
-                  _selectedDeviceId = deviceId;
-                });
-                if (deviceId != null) {
-                  _centerMapOnDevice(deviceId);
-                }
-              },
+              ),
             ),
-          ),
-        ),
-
-        // Legend
-        Positioned(
-          bottom: 16,
-          left: 16,
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Legend',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 12,
-                      height: 12,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.blue,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Text('History', style: TextStyle(fontSize: 10)),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 16,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.blue,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: const Icon(
-                        Icons.phone_android,
-                        size: 8,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Text('Latest', style: TextStyle(fontSize: 10)),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(width: 12, height: 2, color: Colors.blue),
-                    const SizedBox(width: 4),
-                    const Text('Path', style: TextStyle(fontSize: 10)),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Speed Colors:',
-                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold),
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.red,
-                      ),
-                    ),
-                    const SizedBox(width: 2),
-                    const Text('<5', style: TextStyle(fontSize: 8)),
-                    const SizedBox(width: 4),
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.orange,
-                      ),
-                    ),
-                    const SizedBox(width: 2),
-                    const Text('5-30', style: TextStyle(fontSize: 8)),
-                    const SizedBox(width: 4),
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.blue,
-                      ),
-                    ),
-                    const SizedBox(width: 2),
-                    const Text('30-60', style: TextStyle(fontSize: 8)),
-                    const SizedBox(width: 4),
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.green,
-                      ),
-                    ),
-                    const SizedBox(width: 2),
-                    const Text('>60', style: TextStyle(fontSize: 8)),
-                  ],
-                ),
-                const Text(
-                  'km/h',
-                  style: TextStyle(fontSize: 8, color: Colors.grey),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 

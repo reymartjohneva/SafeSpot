@@ -767,7 +767,7 @@ class _DeviceScreenState extends State<DeviceScreen>
 
     if (isActive && hasLocation) {
       chipColor = Colors.green;
-      text = 'Online';
+      text = 'Active';
       icon = Icons.radio_button_checked;
     } else if (isActive && !hasLocation) {
       chipColor = Colors.orange;

@@ -4,7 +4,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'profile_screen.dart';
-import '../services/geofence_service.dart'; // Add this import
+import 'device_screen.dart';
+import '../services/geofence_service.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key}) : super(key: key);
@@ -282,15 +283,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           geofence.points,
         );
 
-        // TODO: Store geofence events for notifications page
-        // You can add logic here to save geofence enter/exit events
-        // to a local database or send to your backend service
         if (isInside) {
           print('Entered geofence: ${geofence.name}');
-          // Add your notification storage logic here
         } else {
           print('Exited geofence: ${geofence.name}');
-          // Add your notification storage logic here
         }
       }
     }
@@ -772,6 +768,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         index: _selectedIndex,
         children: [
           _buildHomeScreen(),
+          const DeviceScreen(),
           const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -817,6 +814,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.devices),
+              label: 'Devices',
+            ),
             BottomNavigationBarItem(
               icon: Icon(Icons.notifications),
               label: 'Notifications',
@@ -966,7 +967,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             ),
           ),
 
-        // Map Container (rest of the build method remains the same)
+        // Map Container
         Expanded(
           child: Container(
             margin: const EdgeInsets.all(16),

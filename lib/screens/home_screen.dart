@@ -282,24 +282,17 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           geofence.points,
         );
 
+        // TODO: Store geofence events for notifications page
+        // You can add logic here to save geofence enter/exit events
+        // to a local database or send to your backend service
         if (isInside) {
-          _showGeofenceAlert(geofence.name, "Entered", Colors.green);
+          print('Entered geofence: ${geofence.name}');
+          // Add your notification storage logic here
         } else {
-          _showGeofenceAlert(geofence.name, "Exited", Colors.red);
+          print('Exited geofence: ${geofence.name}');
+          // Add your notification storage logic here
         }
       }
-    }
-  }
-
-  void _showGeofenceAlert(String geofenceName, String action, Color color) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$action geofence: $geofenceName'),
-          backgroundColor: color,
-          duration: const Duration(seconds: 3),
-        ),
-      );
     }
   }
 

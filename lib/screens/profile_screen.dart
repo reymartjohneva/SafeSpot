@@ -4,7 +4,7 @@ import 'dart:io';
 import '../services/auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -19,69 +19,243 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: const Text(
+          'Profile',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1F2937),
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        shadowColor: Colors.black.withOpacity(0.1),
+        surfaceTintColor: Colors.white,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _showLogoutDialog,
+          Container(
+            margin: const EdgeInsets.only(right: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF2F2),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFFECACA)),
+            ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.logout_rounded,
+                color: Color(0xFFDC2626),
+                size: 20,
+              ),
+              onPressed: _showLogoutDialog,
+            ),
           ),
         ],
       ),
-      body:
-          isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : userProfile == null
-              ? const Center(child: Text('No profile data found.'))
+      body: isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+              ),
+            )
+          : userProfile == null
+              ? const Center(
+                  child: Text(
+                    'No profile data found.',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Color(0xFF6B7280),
+                    ),
+                  ),
+                )
               : SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 16),
-                    _buildProfilePicture(),
-                    const SizedBox(height: 16),
-                    Text(
-                      userProfile!.fullName,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      userProfile!.email,
-                      style: const TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 24),
-                    ListTile(
-                      leading: const Icon(Icons.phone),
-                      title: const Text('Mobile'),
-                      subtitle: Text(userProfile!.mobile),
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.calendar_today),
-                      title: const Text('Joined'),
-                      subtitle: Text(
-                        '${userProfile!.createdAt.toLocal()}'.split(' ')[0],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: _editProfile,
-                      icon: const Icon(Icons.edit),
-                      label: const Text('Edit Profile'),
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(48),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                  child: Column(
+                    children: [
+                      // Profile Header Card
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(32),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            _buildProfilePicture(),
+                            const SizedBox(height: 24),
+                            Text(
+                              userProfile!.fullName,
+                              style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF111827),
+                                letterSpacing: -0.5,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF6366F1).withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                userProfile!.email,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  color: Color(0xFF6366F1),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
+
+                      // Information Cards
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Column(
+                          children: [
+                            _buildInfoCard(
+                              icon: Icons.phone_rounded,
+                              title: 'Mobile Number',
+                              value: userProfile!.mobile,
+                              color: const Color(0xFF10B981),
+                              backgroundColor: const Color(0xFFF0FDF4),
+                              borderColor: const Color(0xFFBBF7D0),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildInfoCard(
+                              icon: Icons.calendar_today_rounded,
+                              title: 'Member Since',
+                              value: _formatJoinDate(userProfile!.createdAt),
+                              color: const Color(0xFF8B5CF6),
+                              backgroundColor: const Color(0xFFFAF5FF),
+                              borderColor: const Color(0xFFDDD6FE),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Edit Profile Button
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 20),
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: _editProfile,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF6366F1),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shadowColor: const Color(0xFF6366F1).withOpacity(0.3),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.edit_rounded, size: 20),
+                              SizedBox(width: 8),
+                              Text(
+                                'Edit Profile',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 40),
+                    ],
+                  ),
                 ),
-              ),
     );
+  }
+
+  Widget _buildInfoCard({
+    required IconData icon,
+    required String title,
+    required String value,
+    required Color color,
+    required Color backgroundColor,
+    required Color borderColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF111827),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatJoinDate(DateTime date) {
+    final months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return '${months[date.month - 1]} ${date.year}';
   }
 
   @override
@@ -159,7 +333,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error loading profile: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
@@ -171,21 +349,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
     print('Storage setup test: ${result.message}');
   }
 
-  // Enhanced _buildProfilePicture with better error handling and debugging
+  // Enhanced _buildProfilePicture with better design
   Widget _buildProfilePicture() {
     print('Building profile picture. Avatar URL: ${userProfile?.avatarUrl}');
 
     if (isUploadingImage) {
       return Container(
-        width: 100,
-        height: 100,
+        width: 120,
+        height: 120,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: const Color(0xFF6366F1).withOpacity(0.1),
+          border: Border.all(
+            color: const Color(0xFF6366F1).withOpacity(0.2),
+            width: 2,
+          ),
         ),
         child: const Center(
           child: CircularProgressIndicator(
             valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+            strokeWidth: 3,
           ),
         ),
       );
@@ -196,84 +379,87 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Stack(
         children: [
           Container(
-            width: 100,
-            height: 100,
+            width: 120,
+            height: 120,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF6366F1),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: const Color(0xFF6366F1).withOpacity(0.3),
                   blurRadius: 20,
-                  offset: const Offset(0, 8),
+                  offset: const Offset(0, 10),
                 ),
               ],
             ),
-            child:
-                userProfile?.avatarUrl != null &&
-                        userProfile!.avatarUrl!.isNotEmpty
-                    ? ClipOval(
-                      child: Image.network(
-                        userProfile!.avatarUrl!,
-                        width: 100,
-                        height: 100,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) {
-                            print('Avatar loaded successfully');
-                            return child;
-                          }
-                          print(
-                            'Loading avatar... ${loadingProgress.cumulativeBytesLoaded}/${loadingProgress.expectedTotalBytes}',
-                          );
-                          return Center(
-                            child: CircularProgressIndicator(
-                              value:
-                                  loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded /
-                                          loadingProgress.expectedTotalBytes!
-                                      : null,
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                Colors.white,
-                              ),
+            child: userProfile?.avatarUrl != null &&
+                    userProfile!.avatarUrl!.isNotEmpty
+                ? ClipOval(
+                    child: Image.network(
+                      userProfile!.avatarUrl!,
+                      width: 120,
+                      height: 120,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) {
+                          print('Avatar loaded successfully');
+                          return child;
+                        }
+                        print(
+                          'Loading avatar... ${loadingProgress.cumulativeBytesLoaded}/${loadingProgress.expectedTotalBytes}',
+                        );
+                        return Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              Colors.white,
                             ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          print('Avatar loading error: $error');
-                          print(
-                            'Avatar URL that failed: ${userProfile!.avatarUrl}',
-                          );
-                          return Center(
-                            child: Text(
-                              _getInitials(userProfile!.fullName),
-                              style: const TextStyle(
-                                fontSize: 36,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
+                            strokeWidth: 3,
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        print('Avatar loading error: $error');
+                        print(
+                          'Avatar URL that failed: ${userProfile!.avatarUrl}',
+                        );
+                        return Center(
+                          child: Text(
+                            _getInitials(userProfile!.fullName),
+                            style: const TextStyle(
+                              fontSize: 40,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
-                          );
-                        },
-                      ),
-                    )
-                    : Center(
-                      child: Text(
-                        _getInitials(userProfile?.fullName ?? ''),
-                        style: const TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                          ),
+                        );
+                      },
+                    ),
+                  )
+                : Center(
+                    child: Text(
+                      _getInitials(userProfile?.fullName ?? ''),
+                      style: const TextStyle(
+                        fontSize: 40,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
+                  ),
           ),
           Positioned(
             bottom: 0,
             right: 0,
             child: Container(
-              width: 32,
-              height: 32,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
@@ -286,7 +472,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
               child: const Icon(
-                Icons.camera_alt,
+                Icons.camera_alt_rounded,
                 color: Color(0xFF6366F1),
                 size: 18,
               ),
@@ -306,42 +492,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
             ),
           ),
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Handle bar
                   Container(
-                    width: 50,
+                    width: 40,
                     height: 4,
                     decoration: BoxDecoration(
                       color: Colors.grey.shade300,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
 
-                  Text(
+                  const Text(
                     'Update Profile Picture',
-                    style: const TextStyle(
-                      fontSize: 20,
+                    style: TextStyle(
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1F2937),
+                      color: Color(0xFF111827),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
 
                   Row(
                     children: [
                       Expanded(
                         child: _buildImageOption(
-                          icon: Icons.camera_alt_outlined,
+                          icon: Icons.camera_alt_rounded,
                           title: 'Camera',
                           subtitle: 'Take a new photo',
                           onTap: () => _pickImage(ImageSource.camera),
@@ -350,7 +536,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(width: 16),
                       Expanded(
                         child: _buildImageOption(
-                          icon: Icons.photo_library_outlined,
+                          icon: Icons.photo_library_rounded,
                           title: 'Gallery',
                           subtitle: 'Choose from gallery',
                           onTap: () => _pickImage(ImageSource.gallery),
@@ -360,24 +546,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
 
                   if (userProfile?.avatarUrl != null) ...[
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
                         onPressed: _deleteProfilePicture,
                         icon: const Icon(
-                          Icons.delete_outline,
-                          color: Colors.red,
+                          Icons.delete_outline_rounded,
+                          color: Color(0xFFDC2626),
                         ),
                         label: const Text(
                           'Remove Current Picture',
-                          style: TextStyle(color: Colors.red),
+                          style: TextStyle(
+                            color: Color(0xFFDC2626),
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: Colors.red.shade300),
+                          side: const BorderSide(color: Color(0xFFDC2626)),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                       ),
                     ),
@@ -393,6 +583,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         style: TextStyle(
                           color: Colors.grey.shade600,
                           fontSize: 16,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
@@ -416,9 +607,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -438,13 +629,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1F2937),
+                color: Color(0xFF111827),
               ),
             ),
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade600,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -483,7 +677,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(result.message),
-              backgroundColor: Colors.green,
+              backgroundColor: const Color(0xFF059669),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               duration: const Duration(seconds: 2),
             ),
           );
@@ -498,7 +696,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(result.message),
-              backgroundColor: Colors.red,
+              backgroundColor: const Color(0xFFDC2626),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               duration: const Duration(seconds: 3),
             ),
           );
@@ -512,7 +714,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error picking image: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           duration: const Duration(seconds: 3),
         ),
       );
@@ -528,37 +734,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
           ),
-          title: Row(
+          title: const Row(
             children: [
-              Icon(Icons.delete_outline, color: Colors.red.shade400, size: 24),
-              const SizedBox(width: 8),
-              const Text('Delete Profile Picture'),
+              Icon(Icons.delete_outline_rounded, color: Color(0xFFDC2626), size: 24),
+              SizedBox(width: 8),
+              Text(
+                'Delete Profile Picture',
+                style: TextStyle(fontSize: 18),
+              ),
             ],
           ),
           content: const Text(
             'Are you sure you want to remove your profile picture?',
+            style: TextStyle(fontSize: 16),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
               child: Text(
                 'Cancel',
-                style: TextStyle(color: Colors.grey.shade600),
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade400,
+                backgroundColor: const Color(0xFFDC2626),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
               child: const Text(
                 'Delete',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -581,7 +797,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result.message),
-            backgroundColor: Colors.green,
+            backgroundColor: const Color(0xFF059669),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -592,7 +812,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result.message),
-            backgroundColor: Colors.red,
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -606,22 +830,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
           ),
-          title: Row(
+          title: const Row(
             children: [
-              Icon(Icons.logout, color: Colors.red.shade400, size: 24),
-              const SizedBox(width: 8),
-              const Text('Logout'),
+              Icon(Icons.logout_rounded, color: Color(0xFFDC2626), size: 24),
+              SizedBox(width: 8),
+              Text(
+                'Logout',
+                style: TextStyle(fontSize: 18),
+              ),
             ],
           ),
-          content: const Text('Are you sure you want to logout?'),
+          content: const Text(
+            'Are you sure you want to logout?',
+            style: TextStyle(fontSize: 16),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
                 'Cancel',
-                style: TextStyle(color: Colors.grey.shade600),
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
             ElevatedButton(
@@ -630,14 +863,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _performLogout();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade400,
+                backgroundColor: const Color(0xFFDC2626),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
               child: const Text(
                 'Logout',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -651,7 +887,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+        ),
+      ),
     );
 
     try {
@@ -666,7 +906,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(result.message),
-              backgroundColor: Colors.green,
+              backgroundColor: const Color(0xFF059669),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               duration: const Duration(seconds: 2),
             ),
           );
@@ -683,7 +927,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(result.message),
-              backgroundColor: Colors.red,
+              backgroundColor: const Color(0xFFDC2626),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               duration: const Duration(seconds: 3),
             ),
           );
@@ -698,7 +946,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Logout failed: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -708,9 +960,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _editProfile() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Edit profile functionality coming soon!'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: const Text('Edit profile functionality coming soon!'),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        duration: const Duration(seconds: 2),
       ),
     );
   }

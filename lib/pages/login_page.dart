@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'registration_page.dart'; // Import the registration page
-// Import the main screen from screens directory
-import '../services/auth_service.dart'; // Import your AuthService
+import 'registration_page.dart';
+import '../services/auth_service.dart';
+import 'package:safe_spot/screens/widgets/login_form.dart';
+import 'package:safe_spot/screens/widgets/login_header.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+  const LoginPage({super.key});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -13,7 +14,6 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
   bool _isLoading = false;
 
   @override
@@ -24,44 +24,39 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _handleLogin() async {
-    print('Login button pressed!'); // Debug print
+    print('Login button pressed!');
 
-    // Get form data
     String email = _emailController.text.trim();
     String password = _passwordController.text;
 
-    print('Email: $email'); // Debug print
-    print('Password length: ${password.length}'); // Debug print
+    print('Email: $email');
+    print('Password length: ${password.length}');
 
-    // Basic validation
     if (email.isEmpty || password.isEmpty) {
-      print('Empty fields validation failed'); // Debug print
+      print('Empty fields validation failed');
       _showSnackBar('Please fill in all fields', Colors.red);
       return;
     }
 
-    // Use AuthService validation methods
     if (!AuthService.isValidEmail(email)) {
-      print('Email validation failed'); // Debug print
+      print('Email validation failed');
       _showSnackBar('Please enter a valid email address', Colors.red);
       return;
     }
 
     if (!AuthService.isValidPassword(password)) {
-      print('Password length validation failed'); // Debug print
+      print('Password length validation failed');
       _showSnackBar('Password must be at least 6 characters', Colors.red);
       return;
     }
 
-    print('All validations passed, starting login process'); // Debug print
+    print('All validations passed, starting login process');
 
-    // Show loading state
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Use AuthService to sign in
       final AuthResult result = await AuthService.signIn(
         email: email,
         password: password,
@@ -72,21 +67,20 @@ class _LoginPageState extends State<LoginPage> {
       });
 
       if (result.success) {
-        print('Login successful, navigating to MainScreen'); // Debug print
+        print('Login successful, navigating to MainScreen');
         _showSnackBar(result.message, Colors.green);
 
-        // Navigate to MainScreen and clear all previous routes
         Navigator.pushNamedAndRemoveUntil(
           context,
           '/home',
-          (route) => false, // This removes ALL previous routes
+          (route) => false,
         );
       } else {
-        print('Login failed: ${result.message}'); // Debug print
+        print('Login failed: ${result.message}');
         _showSnackBar(result.message, Colors.red);
       }
     } catch (e) {
-      print('Unexpected error during login: $e'); // Debug print
+      print('Unexpected error during login: $e');
       setState(() {
         _isLoading = false;
       });
@@ -147,6 +141,15 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  void _navigateToRegistration() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const RegistrationPage(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -158,7 +161,6 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
         child: Container(
-          // Overlay to darken/blend the background image
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
@@ -177,163 +179,15 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Logo and branding section
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 40),
-                      child: Column(
-                        children: [
-                          // Enhanced logo with glow effect using PNG image
-                          Container(
-                            height: 100,
-                            width: 100,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.green.withOpacity(0.3),
-                                  blurRadius: 20,
-                                  spreadRadius: 5,
-                                ),
-                              ],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(50),
-                              child: Image.asset(
-                                'assets/app1_icon.png',
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  // Fallback to icon if image fails to load
-                                  return Container(
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: [
-                                          Colors.green.shade300,
-                                          Colors.green.shade600,
-                                        ],
-                                      ),
-                                    ),
-                                    child: Center(
-                                      child: Icon(
-                                        Icons.location_on,
-                                        color: Colors.white,
-                                        size: 50,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-
-                          // App name with shadow
-                          Text(
-                            'SafeSpot',
-                            style: TextStyle(
-                              fontSize: 36,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black.withOpacity(0.5),
-                                  offset: const Offset(2, 2),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-
-                          // Tagline
-                          Text(
-                            'Your Safety, Our Priority',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.white.withOpacity(0.9),
-                              fontWeight: FontWeight.w300,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Login form with glassmorphism effect
-                    Container(
-                      padding: const EdgeInsets.all(32.0),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(25),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Welcome back text
-                          Center(
-                            child: Text(
-                              'Welcome Back!',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 30),
-
-                          // Email field
-                          _buildInputField(
-                            controller: _emailController,
-                            label: 'Email',
-                            icon: Icons.email_outlined,
-                            keyboardType: TextInputType.emailAddress,
-                            enabled: !_isLoading,
-                          ),
-                          const SizedBox(height: 20),
-
-                          // Password field
-                          _buildPasswordField(),
-                          const SizedBox(height: 16),
-
-                          // Forgot password
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed:
-                                  _isLoading ? null : _handleForgotPassword,
-                              child: Text(
-                                'Forgot Password?',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.8),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 30),
-
-                          // Login button
-                          _buildLoginButton(),
-                        ],
-                      ),
+                    const LoginHeader(),
+                    LoginForm(
+                      emailController: _emailController,
+                      passwordController: _passwordController,
+                      isLoading: _isLoading,
+                      onLogin: _handleLogin,
+                      onForgotPassword: _handleForgotPassword,
                     ),
                     const SizedBox(height: 30),
-
-                    // Sign up link
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -345,19 +199,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         TextButton(
-                          onPressed:
-                              _isLoading
-                                  ? null
-                                  : () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder:
-                                            (context) =>
-                                                const RegistrationPage(),
-                                      ),
-                                    );
-                                  },
+                          onPressed: _isLoading ? null : _navigateToRegistration,
                           child: Text(
                             'Sign Up',
                             style: TextStyle(
@@ -375,165 +217,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildInputField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    TextInputType? keyboardType,
-    bool enabled = true,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.white.withOpacity(0.9),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
-          ),
-          child: TextField(
-            controller: controller,
-            keyboardType: keyboardType,
-            enabled: enabled,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              prefixIcon: Icon(icon, color: Colors.white.withOpacity(0.7)),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 16,
-              ),
-              hintText: 'Enter your ${label.toLowerCase()}',
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPasswordField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Password',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.white.withOpacity(0.9),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
-          ),
-          child: TextField(
-            controller: _passwordController,
-            obscureText: _obscurePassword,
-            enabled: !_isLoading,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              prefixIcon: Icon(
-                Icons.lock_outline,
-                color: Colors.white.withOpacity(0.7),
-              ),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                  color: Colors.white.withOpacity(0.7),
-                ),
-                onPressed:
-                    _isLoading
-                        ? null
-                        : () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
-              ),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 16,
-              ),
-              hintText: 'Enter your password',
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLoginButton() {
-    return Container(
-      width: double.infinity,
-      height: 55,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors:
-              _isLoading
-                  ? [Colors.grey.shade400, Colors.grey.shade500]
-                  : [Colors.green.shade400, Colors.green.shade600],
-        ),
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color:
-                _isLoading
-                    ? Colors.grey.withOpacity(0.3)
-                    : Colors.green.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : _handleLogin,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-        ),
-        child:
-            _isLoading
-                ? const SizedBox(
-                  height: 24,
-                  width: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-                : const Text(
-                  'Login',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
       ),
     );
   }

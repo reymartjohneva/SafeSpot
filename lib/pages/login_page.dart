@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'registration_page.dart';
 import '../services/auth_service.dart';
-import 'package:safe_spot/screens/widgets/login_form.dart';
-import 'package:safe_spot/screens/widgets/login_header.dart';
+import 'package:safe_spot/pages/widgets/login_form.dart';
+import 'package:safe_spot/pages/widgets/login_header.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

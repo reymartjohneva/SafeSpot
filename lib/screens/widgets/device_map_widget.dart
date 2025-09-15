@@ -50,6 +50,7 @@ class DeviceMapWidget extends StatelessWidget {
       builder: (context, constraints) {
         return Stack(
           children: [
+            // Main Map
             FlutterMap(
               mapController: mapController,
               options: MapOptions(
@@ -247,20 +248,518 @@ class DeviceMapWidget extends StatelessWidget {
               ],
             ),
 
-            // Device selector
-            _buildDeviceSelector(context),
+            // Top Controls Panel
+            _buildTopControlsPanel(context, constraints),
 
-            // Map legend
-            _buildLegend(context, constraints),
+            // Bottom Information Panel
+            _buildBottomInformationPanel(context, constraints),
 
-            // Map controls
-            _buildMapControls(context),
+            // Right Side Map Controls
+            _buildMapControlsPanel(context),
           ],
         );
       },
     );
   }
 
+  // Top Controls Panel with Device Selector
+  Widget _buildTopControlsPanel(BuildContext context, BoxConstraints constraints) {
+    return Positioned(
+      top: 16,
+      left: 16,
+      right: 16,
+      child: Card(
+        elevation: 8,
+        shadowColor: Colors.black26,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.white,
+                Colors.grey.shade50,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Colors.grey.shade200,
+              width: 1,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.tune,
+                    color: Colors.blue.shade600,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Device Filter',
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: selectedDeviceId,
+                          hint: Text(
+                            'Select device to view',
+                            style: TextStyle(color: Colors.grey.shade600),
+                          ),
+                          isExpanded: true,
+                          icon: Icon(Icons.expand_more, color: Colors.grey.shade600),
+                          items: [
+                            DropdownMenuItem<String>(
+                              value: null,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 20,
+                                    height: 20,
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.shade100,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Icon(
+                                      Icons.visibility,
+                                      size: 14,
+                                      color: Colors.green.shade600,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Text('Show all devices'),
+                                ],
+                              ),
+                            ),
+                            ...devices.map(
+                              (device) => DropdownMenuItem<String>(
+                                value: device.deviceId,
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 20,
+                                      height: 20,
+                                      decoration: BoxDecoration(
+                                        color: DeviceUtils.getDeviceColor(device.deviceId),
+                                        borderRadius: BorderRadius.circular(6),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: DeviceUtils.getDeviceColor(device.deviceId).withOpacity(0.3),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Icon(
+                                        Icons.smartphone,
+                                        size: 12,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        device.deviceName,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(fontWeight: FontWeight.w500),
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue.shade50,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: Colors.blue.shade200,
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        '${deviceLocations[device.deviceId]?.length ?? 0}',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.blue.shade700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                          onChanged: (deviceId) {
+                            onDeviceSelected(deviceId);
+                            if (deviceId != null) {
+                              onCenterMapOnDevice(deviceId);
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Bottom Information Panel with Legend
+  Widget _buildBottomInformationPanel(BuildContext context, BoxConstraints constraints) {
+    return Positioned(
+      bottom: 16,
+      left: 16,
+      child: Card(
+        elevation: 8,
+        shadowColor: Colors.black26,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: constraints.maxWidth > 400 ? 280 : constraints.maxWidth - 120,
+          ),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.white,
+                Colors.grey.shade50,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Colors.grey.shade200,
+              width: 1,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Legend Header
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.map_outlined,
+                        size: 16,
+                        color: Colors.orange.shade600,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Map Legend',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                // Legend Items
+                _buildLegendItem(
+                  Icons.radio_button_unchecked,
+                  'Historical points',
+                  Colors.blue.shade400,
+                  context,
+                ),
+                const SizedBox(height: 12),
+                _buildLegendItem(
+                  Icons.smartphone,
+                  'Device location',
+                  Colors.green.shade500,
+                  context,
+                ),
+                if (currentPosition != null) ...[
+                  const SizedBox(height: 12),
+                  _buildLegendItem(
+                    Icons.my_location,
+                    'Your location',
+                    Colors.blue.shade600,
+                    context,
+                  ),
+                ],
+                if (geofences.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  _buildLegendItem(
+                    Icons.layers_outlined,
+                    'Geofences',
+                    Colors.orange.shade500,
+                    context,
+                  ),
+                ],
+                const SizedBox(height: 12),
+                
+                // Movement Path
+                Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 3,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.blue.shade400, Colors.blue.shade600],
+                        ),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Movement path',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Right Side Map Controls Panel
+  Widget _buildMapControlsPanel(BuildContext context) {
+    return Positioned(
+      bottom: 16,
+      right: 16,
+      child: Card(
+        elevation: 8,
+        shadowColor: Colors.black26,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.white,
+                Colors.grey.shade50,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Colors.grey.shade200,
+              width: 1,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Fit bounds button
+                _buildMapControlButton(
+                  icon: Icons.fit_screen_outlined,
+                  onPressed: () => _fitMapToBounds(),
+                  backgroundColor: Colors.purple.shade50,
+                  iconColor: Colors.purple.shade600,
+                  tooltip: 'Fit to bounds',
+                ),
+                
+                const SizedBox(height: 8),
+                
+                // My location button
+                _buildMapControlButton(
+                  icon: Icons.my_location_outlined,
+                  onPressed: onCenterMapOnCurrentLocation,
+                  backgroundColor: currentPosition != null 
+                      ? Colors.blue.shade50 
+                      : Colors.grey.shade100,
+                  iconColor: currentPosition != null 
+                      ? Colors.blue.shade600 
+                      : Colors.grey.shade500,
+                  tooltip: 'My location',
+                ),
+                
+                const SizedBox(height: 8),
+                
+                // Home/center button
+                _buildMapControlButton(
+                  icon: Icons.home_outlined,
+                  onPressed: () {
+                    mapController.move(LatLng(8.9511, 125.5439), 13.0);
+                  },
+                  backgroundColor: Colors.green.shade50,
+                  iconColor: Colors.green.shade600,
+                  tooltip: 'Center map',
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // Divider
+                Container(
+                  height: 1,
+                  width: 30,
+                  color: Colors.grey.shade300,
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // Zoom in button
+                _buildMapControlButton(
+                  icon: Icons.add,
+                  onPressed: () {
+                    var currentZoom = mapController.zoom;
+                    if (currentZoom < 18) {
+                      mapController.move(
+                        mapController.center,
+                        currentZoom + 1,
+                      );
+                    }
+                  },
+                  backgroundColor: Colors.orange.shade50,
+                  iconColor: Colors.orange.shade600,
+                  tooltip: 'Zoom in',
+                ),
+                
+                const SizedBox(height: 8),
+                
+                // Zoom out button
+                _buildMapControlButton(
+                  icon: Icons.remove,
+                  onPressed: () {
+                    var currentZoom = mapController.zoom;
+                    if (currentZoom > 5) {
+                      mapController.move(
+                        mapController.center,
+                        currentZoom - 1,
+                      );
+                    }
+                  },
+                  backgroundColor: Colors.red.shade50,
+                  iconColor: Colors.red.shade600,
+                  tooltip: 'Zoom out',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper method for map control buttons
+  Widget _buildMapControlButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    required Color backgroundColor,
+    required Color iconColor,
+    required String tooltip,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        width: 48,
+        height: 48,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onPressed,
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              decoration: BoxDecoration(
+                color: backgroundColor,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: iconColor.withOpacity(0.2),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: iconColor.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                icon,
+                color: iconColor,
+                size: 22,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper method for legend items
+  Widget _buildLegendItem(IconData icon, String label, Color color, BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: color.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Icon(
+            icon,
+            size: 14,
+            color: color,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Colors.grey.shade700,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Keep all existing functionality methods unchanged
   List<Polyline> _buildDevicePolylines() {
     return deviceLocations.entries
         .where((entry) => entry.value.length > 1)
@@ -431,84 +930,127 @@ class DeviceMapWidget extends StatelessWidget {
     return [
       Marker(
         point: LatLng(latestLocation.latitude, latestLocation.longitude),
-        width: constraints.maxWidth > 300 ? 220 : constraints.maxWidth - 80,
-        height: 140,
+        width: constraints.maxWidth > 300 ? 240 : constraints.maxWidth - 80,
+        height: 160,
         builder: (context) => Transform.translate(
-          offset: const Offset(0, -120),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            constraints: BoxConstraints(maxWidth: constraints.maxWidth - 80),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: DeviceUtils.getDeviceColor(device.deviceId),
-                width: 2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+          offset: const Offset(0, -140),
+          child: Card(
+            elevation: 12,
+            shadowColor: Colors.black38,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
+            child: Container(
+              constraints: BoxConstraints(maxWidth: constraints.maxWidth - 80),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white,
+                    Colors.grey.shade50,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: DeviceUtils.getDeviceColor(device.deviceId).withOpacity(0.3),
+                  width: 2,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: DeviceUtils.getDeviceColor(device.deviceId),
-                      ),
-                      child: const Icon(Icons.smartphone, size: 12, color: Colors.white),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        device.deviceName,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
+                    // Device Header
+                    Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                DeviceUtils.getDeviceColor(device.deviceId),
+                                DeviceUtils.getDeviceColor(device.deviceId).withOpacity(0.7),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: DeviceUtils.getDeviceColor(device.deviceId).withOpacity(0.3),
+                                blurRadius: 6,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.smartphone,
+                            size: 18,
+                            color: Colors.white,
+                          ),
                         ),
-                        overflow: TextOverflow.ellipsis,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                device.deviceName,
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey.shade800,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                'Device Information',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Device Info Items
+                    _buildInfoRow(
+                      Icons.access_time_filled,
+                      'Last seen',
+                      DeviceUtils.formatDateSmart(latestLocation.createdAt),
+                      context,
+                    ),
+                    const SizedBox(height: 8),
+                    if (latestLocation.speed != null)
+                      _buildInfoRow(
+                        Icons.speed,
+                        'Speed',
+                        DeviceUtils.formatSpeed(latestLocation.speed!),
+                        context,
+                        valueColor: DeviceUtils.getSpeedColor(latestLocation.speed),
                       ),
+                    const SizedBox(height: 8),
+                    _buildInfoRow(
+                      Icons.timeline,
+                      'History',
+                      '${locations.length} points',
+                      context,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildInfoRow(
+                      Icons.radio_button_checked,
+                      'Status',
+                      device.isActive ? 'Active' : 'Inactive',
+                      context,
+                      valueColor: device.isActive ? Colors.green.shade600 : Colors.orange.shade600,
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                _buildInfoRow(
-                  Icons.access_time,
-                  'Last seen',
-                  DeviceUtils.formatDateSmart(latestLocation.createdAt),
-                  context,
-                ),
-                if (latestLocation.speed != null)
-                  _buildInfoRow(
-                    Icons.speed,
-                    'Speed',
-                    DeviceUtils.formatSpeed(latestLocation.speed!),
-                    context,
-                    valueColor: DeviceUtils.getSpeedColor(latestLocation.speed),
-                  ),
-                _buildInfoRow(
-                  Icons.timeline,
-                  'History',
-                  '${locations.length} points',
-                  context,
-                ),
-                _buildInfoRow(
-                  Icons.radio_button_checked,
-                  'Status',
-                  device.isActive ? 'Active' : 'Inactive',
-                  context,
-                  valueColor: device.isActive ? Colors.green : Colors.orange,
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -519,303 +1061,45 @@ class DeviceMapWidget extends StatelessWidget {
   Widget _buildInfoRow(IconData icon, String label, String value, BuildContext context,
       {Color? valueColor}) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Icon(icon, size: 12, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontSize: 10,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w500,
-              color: valueColor ?? theme.colorScheme.onSurface,
-              fontSize: 10,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDeviceSelector(BuildContext context) {
-    return Positioned(
-      top: 16,
-      left: 16,
-      right: 16,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.filter_list,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: DropdownButton<String>(
-                value: selectedDeviceId,
-                hint: const Text('Select device to view'),
-                isExpanded: true,
-                underline: Container(),
-                items: [
-                  const DropdownMenuItem<String>(
-                    value: null,
-                    child: Row(
-                      children: [
-                        Icon(Icons.visibility, size: 16),
-                        SizedBox(width: 8),
-                        Text('Show all devices'),
-                      ],
-                    ),
-                  ),
-                  ...devices.map(
-                    (device) => DropdownMenuItem<String>(
-                      value: device.deviceId,
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 16,
-                            height: 16,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: DeviceUtils.getDeviceColor(device.deviceId),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              device.deviceName,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surfaceVariant,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              '${deviceLocations[device.deviceId]?.length ?? 0}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(fontSize: 10),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-                onChanged: (deviceId) {
-                  onDeviceSelected(deviceId);
-                  if (deviceId != null) {
-                    onCenterMapOnDevice(deviceId);
-                  }
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLegend(BuildContext context, BoxConstraints constraints) {
-    return Positioned(
-      bottom: 16,
-      left: 16,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        constraints: BoxConstraints(
-          maxWidth: constraints.maxWidth > 400 ? 240 : constraints.maxWidth - 100,
-        ),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface.withOpacity(0.95),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'Map Legend',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _buildLegendItem(Icons.radio_button_unchecked, 'Historical points', Colors.blue),
-            const SizedBox(height: 8),
-            _buildLegendItem(Icons.smartphone, 'Device location', Colors.blue),
-            if (currentPosition != null) ...[
-              const SizedBox(height: 8),
-              _buildLegendItem(Icons.my_location, 'Your location', Colors.blue),
-            ],
-            if (geofences.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              _buildLegendItem(Icons.layers, 'Geofences', Colors.orange),
-            ],
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Container(width: 20, height: 2, color: Colors.blue),
-                const SizedBox(width: 8),
-                Text('Movement path', style: Theme.of(context).textTheme.bodySmall),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLegendItem(IconData icon, String label, Color color) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: color),
-        const SizedBox(width: 8),
-        Text(label, style: const TextStyle(fontSize: 12)),
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: (valueColor ?? theme.colorScheme.primary).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Icon(
+            icon,
+            size: 14,
+            color: valueColor ?? theme.colorScheme.primary,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const Spacer(),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: (valueColor ?? theme.colorScheme.onSurface).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            value,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: valueColor ?? theme.colorScheme.onSurface,
+            ),
+          ),
+        ),
       ],
-    );
-  }
-
-  Widget _buildMapControls(BuildContext context) {
-    return Positioned(
-      bottom: 16,
-      right: 16,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // Fit bounds button
-          Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: FloatingActionButton.small(
-              onPressed: () => _fitMapToBounds(),
-              heroTag: "fit_bounds",
-              backgroundColor: Colors.white,
-              elevation: 4,
-              child: const Icon(Icons.fit_screen, color: Colors.black54, size: 20),
-            ),
-          ),
-          
-          // My location button
-          Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: FloatingActionButton.small(
-              onPressed: onCenterMapOnCurrentLocation,
-              heroTag: "my_location",
-              backgroundColor: currentPosition != null ? Colors.blue.shade50 : Colors.white,
-              elevation: 4,
-              child: Icon(
-                Icons.my_location, 
-                color: currentPosition != null ? Colors.blue.shade700 : Colors.grey.shade600, 
-                size: 20,
-              ),
-            ),
-          ),
-          
-          // Home/center button
-          Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: FloatingActionButton.small(
-              onPressed: () {
-                mapController.move(LatLng(8.9511, 125.5439), 13.0);
-              },
-              heroTag: "center_map",
-              backgroundColor: Colors.white,
-              elevation: 4,
-              child: const Icon(Icons.home, color: Colors.black54, size: 20),
-            ),
-          ),
-          
-          // Zoom in button
-          Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: FloatingActionButton.small(
-              onPressed: () {
-                var currentZoom = mapController.zoom;
-                if (currentZoom < 18) {
-                  mapController.move(
-                    mapController.center,
-                    currentZoom + 1,
-                  );
-                }
-              },
-              heroTag: "zoom_in",
-              backgroundColor: Colors.white,
-              elevation: 4,
-              child: const Icon(Icons.add, color: Colors.black54, size: 20),
-            ),
-          ),
-          
-          // Zoom out button
-          Container(
-            child: FloatingActionButton.small(
-              onPressed: () {
-                var currentZoom = mapController.zoom;
-                if (currentZoom > 5) {
-                  mapController.move(
-                    mapController.center,
-                    currentZoom - 1,
-                  );
-                }
-              },
-              heroTag: "zoom_out",
-              backgroundColor: Colors.white,
-              elevation: 4,
-              child: const Icon(Icons.remove, color: Colors.black54, size: 20),
-            ),
-          ),
-        ],
-      ),
     );
   }
 

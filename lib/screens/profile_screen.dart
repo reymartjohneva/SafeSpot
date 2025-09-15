@@ -245,50 +245,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // }
   }
 
-  // Add this method to show logout confirmation dialog
-  Future<bool?> _showLogoutDialog() async {
-    return showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Text(
-            'Logout',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF111827),
-            ),
-          ),
-          content: const Text(
-            'Are you sure you want to logout?',
-            style: TextStyle(
-              color: Color(0xFF6B7280),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Color(0xFF6B7280)),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFFDC2626),
-              ),
-              child: const Text('Logout'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   // Add this method to perform the actual logout
   Future<void> _performLogout() async {
     if (isLoggingOut) return;

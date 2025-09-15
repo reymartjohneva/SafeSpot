@@ -41,9 +41,6 @@ class DeviceGeofenceOverlay extends StatelessWidget {
         
         // Map controls
         _buildMapControls(context),
-        
-        // Info overlay
-        _buildInfoOverlay(context),
       ],
     );
   }
@@ -174,69 +171,6 @@ class DeviceGeofenceOverlay extends StatelessWidget {
             ),
           ],
         ],
-      ),
-    );
-  }
-
-  Widget _buildInfoOverlay(BuildContext context) {
-    return Positioned(
-      bottom: 16,
-      left: 16,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.9),
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Geofence Info',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey.shade700,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Total: ${geofences.length}',
-              style: const TextStyle(fontSize: 10),
-            ),
-            Text(
-              'Active: ${geofences.where((g) => g.isActive).length}',
-              style: const TextStyle(fontSize: 10),
-            ),
-            if (isDrawingGeofence) ...[
-              const Divider(height: 8),
-              Text(
-                'Drawing: ${currentGeofencePoints.length} points',
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: Colors.orange,
-                ),
-              ),
-              if (isDragging && draggedPointIndex != null)
-                Text(
-                  'Dragging point ${draggedPointIndex! + 1}',
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: Colors.orange,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-            ],
-          ],
-        ),
       ),
     );
   }

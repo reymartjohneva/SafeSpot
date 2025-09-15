@@ -18,6 +18,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   UserProfile? userProfile;
   bool isLoading = true;
   bool isUploadingImage = false;
+  bool isLoggingOut = false; // Add this to track logout state
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -58,12 +59,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
             border: Border.all(color: const Color(0xFFFECACA)),
           ),
           child: IconButton(
-            icon: const Icon(
-              Icons.logout_rounded,
-              color: Color(0xFFDC2626),
-              size: 20,
-            ),
-            onPressed: () => ProfileUtils.showLogoutDialog(context),
+            icon: isLoggingOut 
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFDC2626)),
+                  ),
+                )
+              : const Icon(
+                  Icons.logout_rounded,
+                  color: Color(0xFFDC2626),
+                  size: 20,
+                ),
+            onPressed: isLoggingOut ? null : _handleLogout,
           ),
         ),
       ],
@@ -221,6 +231,125 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  // Add this new method to handle logout directly
+  Future<void> _handleLogout() async {
+    // Option 1: Handle logout directly without dialog
+    await _performLogout();
+    
+    // Option 2: Show dialog first (uncomment this and comment above if you want dialog)
+    // final bool? confirmed = await _showLogoutDialog();
+    // if (confirmed == true) {
+    //   await _performLogout();
+    // }
+  }
+
+  // Add this method to show logout confirmation dialog
+  Future<bool?> _showLogoutDialog() async {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Logout',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF111827),
+            ),
+          ),
+          content: const Text(
+            'Are you sure you want to logout?',
+            style: TextStyle(
+              color: Color(0xFF6B7280),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Color(0xFF6B7280)),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFDC2626),
+              ),
+              child: const Text('Logout'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Add this method to perform the actual logout
+  Future<void> _performLogout() async {
+    if (isLoggingOut) return;
+    
+    setState(() {
+      isLoggingOut = true;
+    });
+
+    try {
+      // Call the signOut method from AuthService (returns AuthResult)
+      final result = await AuthService.signOut();
+      
+      if (result.success) {
+        // Navigate to login screen and clear all previous routes
+        if (mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/login', // Replace with your login route name
+            (Route<dynamic> route) => false,
+          );
+        }
+      } else {
+        // Handle logout failure
+        setState(() {
+          isLoggingOut = false;
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message),
+              backgroundColor: const Color(0xFFDC2626),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('Logout error: $e');
+      
+      setState(() {
+        isLoggingOut = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Logout failed: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   // Profile management methods

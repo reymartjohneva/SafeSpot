@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'dart:async';
 import '../services/device_service.dart';
+import '../services/geofence_service.dart';
 import 'widgets/device_list_widget.dart';
 import 'widgets/device_map_widget.dart';
 import 'widgets/device_stats_widget.dart';
 import 'widgets/add_device_form_widget.dart';
+import 'widgets/device_geofence_overlay.dart';
 import '../utils/device_utils.dart';
 
 class DeviceScreen extends StatefulWidget {
@@ -17,15 +21,15 @@ class DeviceScreen extends StatefulWidget {
 }
 
 class _DeviceScreenState extends State<DeviceScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late TabController _tabController;
   final MapController _mapController = MapController();
 
-  // Controllers
+  // Device controllers
   final _deviceIdController = TextEditingController();
   final _deviceNameController = TextEditingController();
 
-  // State variables
+  // Device state variables
   List<Device> _devices = [];
   Map<String, List<LocationHistory>> _deviceLocations = {};
   bool _isLoading = false;
@@ -33,26 +37,203 @@ class _DeviceScreenState extends State<DeviceScreen>
   String? _selectedDeviceId;
   bool _showAddDeviceForm = false;
 
+  // Location state variables
+  Position? _currentPosition;
+  bool _isLocationServiceEnabled = false;
+  bool _isGettingLocation = false;
+
+  // Geofence state variables
+  List<Geofence> _geofences = [];
+  bool _isDrawingGeofence = false;
+  List<LatLng> _currentGeofencePoints = [];
+  final TextEditingController _geofenceNameController = TextEditingController();
+  bool _isLoadingGeofences = false;
+  bool _isSavingGeofence = false;
+  bool _isDragging = false;
+  int? _draggedPointIndex;
+  LatLng? _draggedPointOriginalPosition;
+
   Timer? _refreshTimer;
   static const Duration _refreshInterval = Duration(seconds: 30);
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _tabController = TabController(length: 2, vsync: this);
+    _initializeLocation();
     _loadDevices();
+    _loadGeofences();
     _startAutoRefresh();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _refreshTimer?.cancel();
     _tabController.dispose();
     _deviceIdController.dispose();
     _deviceNameController.dispose();
+    _geofenceNameController.dispose();
     super.dispose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _reinitializeLocation();
+    }
+  }
+
+  // Location methods
+  Future<void> _reinitializeLocation() async {
+    bool wasLocationEnabled = _isLocationServiceEnabled;
+    await _checkLocationService();
+    if (!wasLocationEnabled && _isLocationServiceEnabled) {
+      await _initializeLocation();
+    }
+  }
+
+  Future<void> _initializeLocation() async {
+    setState(() {
+      _isGettingLocation = true;
+    });
+
+    try {
+      await _requestLocationPermissions();
+      await _checkLocationService();
+      if (_isLocationServiceEnabled) {
+        await _getCurrentLocation();
+      }
+    } catch (e) {
+      print('Error initializing location: $e');
+    } finally {
+      setState(() {
+        _isGettingLocation = false;
+      });
+    }
+  }
+
+  Future<void> _requestLocationPermissions() async {
+    var status = await Permission.location.status;
+    if (status.isDenied) {
+      status = await Permission.location.request();
+    }
+
+    if (status.isPermanentlyDenied) {
+      openAppSettings();
+      return;
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+  }
+
+  Future<void> _checkLocationService() async {
+    bool isEnabled = await Geolocator.isLocationServiceEnabled();
+    setState(() {
+      _isLocationServiceEnabled = isEnabled;
+    });
+
+    if (!isEnabled && mounted) {
+      _showLocationServiceDialog();
+    }
+  }
+
+  void _showLocationServiceDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Location Services Disabled'),
+        content: const Text(
+          'Please enable location services to display your location marker.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Geolocator.openLocationSettings();
+            },
+            child: const Text('Settings'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _getCurrentLocation() async {
+    if (!_isLocationServiceEnabled) return;
+
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        print('Location permissions are permanently denied');
+        return;
+      }
+
+      if (permission == LocationPermission.whileInUse ||
+          permission == LocationPermission.always) {
+        Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 10),
+        );
+
+        if (mounted) {
+          setState(() {
+            _currentPosition = position;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error getting current location: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to get location: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _centerMapOnCurrentLocation() {
+    if (_currentPosition != null) {
+      _mapController.move(
+        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+        15.0,
+      );
+    } else if (_isLocationServiceEnabled) {
+      _getCurrentLocation();
+    }
+  }
+
+  Future<void> _refreshLocation() async {
+    setState(() {
+      _isGettingLocation = true;
+    });
+
+    await _checkLocationService();
+    if (_isLocationServiceEnabled) {
+      await _getCurrentLocation();
+    }
+
+    setState(() {
+      _isGettingLocation = false;
+    });
+  }
+
+  // Device methods
   void _startAutoRefresh() {
     _refreshTimer = Timer.periodic(_refreshInterval, (timer) {
       if (mounted && DeviceService.isAuthenticated) {
@@ -186,6 +367,319 @@ class _DeviceScreenState extends State<DeviceScreen>
     }
   }
 
+  // Geofence methods
+  Future<void> _loadGeofences() async {
+    if (!GeofenceService.isAuthenticated) {
+      print('User not authenticated, skipping geofence loading');
+      return;
+    }
+
+    setState(() {
+      _isLoadingGeofences = true;
+    });
+
+    try {
+      final geofenceData = await GeofenceService.getUserGeofences();
+      final geofences =
+          geofenceData.map((data) => Geofence.fromSupabase(data)).toList();
+
+      if (mounted) {
+        setState(() {
+          _geofences = geofences;
+          _isLoadingGeofences = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading geofences: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingGeofences = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load geofences: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _startDrawingGeofence() {
+    setState(() {
+      _isDrawingGeofence = true;
+      _currentGeofencePoints.clear();
+      _isDragging = false;
+      _draggedPointIndex = null;
+    });
+  }
+
+  void _stopDrawingGeofence() {
+    if (_currentGeofencePoints.length >= 3) {
+      _showCreateGeofenceDialog();
+    } else {
+      setState(() {
+        _isDrawingGeofence = false;
+        _currentGeofencePoints.clear();
+        _isDragging = false;
+        _draggedPointIndex = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Geofence needs at least 3 points')),
+      );
+    }
+  }
+
+  void _showCreateGeofenceDialog() {
+    _geofenceNameController.clear();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create Geofence'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _geofenceNameController,
+              decoration: const InputDecoration(
+                labelText: 'Geofence Name',
+                hintText: 'Enter a name for this geofence',
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text('Points: ${_currentGeofencePoints.length}'),
+            const SizedBox(height: 8),
+            const Text(
+              'Tip: You can drag points to adjust the geofence shape',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _isDrawingGeofence = false;
+                _currentGeofencePoints.clear();
+                _isDragging = false;
+                _draggedPointIndex = null;
+              });
+              Navigator.pop(context);
+            },
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: _isSavingGeofence
+                ? null
+                : () async {
+                    final name = _geofenceNameController.text.trim();
+                    final validationError = GeofenceUtils.validateGeofence(
+                      name,
+                      _currentGeofencePoints,
+                    );
+
+                    if (validationError != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(validationError),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+
+                    await _createGeofence(name);
+                    Navigator.pop(context);
+                  },
+            child: _isSavingGeofence
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Create'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _createGeofence(String name) async {
+    if (!GeofenceService.isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please log in to create geofences'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSavingGeofence = true;
+    });
+
+    try {
+      final points = _currentGeofencePoints
+          .map((point) => {'lat': point.latitude, 'lng': point.longitude})
+          .toList();
+
+      final color = GeofenceUtils.getRandomColor(_geofences.length);
+      final colorHex = '#${color.value.toRadixString(16).substring(2)}';
+
+      final geofenceData = await GeofenceService.createGeofence(
+        name: name,
+        points: points,
+        color: colorHex,
+      );
+
+      final geofence = Geofence.fromSupabase(geofenceData);
+
+      setState(() {
+        _geofences.add(geofence);
+        _isDrawingGeofence = false;
+        _currentGeofencePoints.clear();
+        _isDragging = false;
+        _draggedPointIndex = null;
+        _isSavingGeofence = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Geofence "$name" created successfully')),
+      );
+    } catch (e) {
+      setState(() {
+        _isSavingGeofence = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to create geofence: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _onMapTap(TapPosition tapPosition, LatLng point) {
+    if (_isDrawingGeofence) {
+      if (_isDragging && _draggedPointIndex != null) {
+        setState(() {
+          _currentGeofencePoints[_draggedPointIndex!] = point;
+          _isDragging = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Point ${_draggedPointIndex! + 1} moved to new position',
+            ),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.blue,
+          ),
+        );
+
+        _draggedPointIndex = null;
+        _draggedPointOriginalPosition = null;
+      } else {
+        setState(() {
+          _currentGeofencePoints.add(point);
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Point ${_currentGeofencePoints.length} added. Long press on any point to move it.',
+            ),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    }
+  }
+
+  void _onMapLongPress(TapPosition tapPosition, LatLng point) {
+    if (_isDrawingGeofence && _currentGeofencePoints.isNotEmpty) {
+      int closestPointIndex = GeofenceUtils.findClosestPointIndex(
+        point,
+        _currentGeofencePoints,
+      );
+      if (closestPointIndex != -1) {
+        setState(() {
+          _isDragging = true;
+          _draggedPointIndex = closestPointIndex;
+          _draggedPointOriginalPosition =
+              _currentGeofencePoints[closestPointIndex];
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Tap on map to move point ${closestPointIndex + 1} to new position.',
+            ),
+            duration: const Duration(seconds: 3),
+            backgroundColor: Colors.orange,
+            action: SnackBarAction(
+              label: 'Cancel',
+              onPressed: () {
+                setState(() {
+                  _isDragging = false;
+                  _draggedPointIndex = null;
+                  if (_draggedPointOriginalPosition != null) {
+                    _currentGeofencePoints[closestPointIndex] =
+                        _draggedPointOriginalPosition!;
+                  }
+                });
+              },
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _toggleGeofenceStatus(String geofenceId, bool isActive) async {
+    try {
+      await GeofenceService.toggleGeofenceStatus(geofenceId, isActive);
+
+      setState(() {
+        final index = _geofences.indexWhere((g) => g.id == geofenceId);
+        if (index != -1) {
+          _geofences[index].isActive = isActive;
+        }
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update geofence: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _deleteGeofence(String geofenceId, int index) async {
+    try {
+      await GeofenceService.deleteGeofence(geofenceId);
+
+      setState(() {
+        _geofences.removeAt(index);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Geofence deleted successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to delete geofence: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -233,6 +727,15 @@ class _DeviceScreenState extends State<DeviceScreen>
             fontWeight: FontWeight.w600,
           ),
         ),
+        actions: [
+          IconButton(
+            onPressed: _refreshLocation,
+            icon: Icon(
+              Icons.my_location,
+              color: _isGettingLocation ? Colors.grey : theme.colorScheme.onSurface,
+            ),
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Container(
@@ -263,19 +766,7 @@ class _DeviceScreenState extends State<DeviceScreen>
         controller: _tabController,
         children: [
           _buildDevicesTab(),
-          DeviceMapWidget(
-            mapController: _mapController,
-            devices: _devices,
-            deviceLocations: _deviceLocations,
-            selectedDeviceId: _selectedDeviceId,
-            onDeviceSelected: (deviceId) {
-              setState(() {
-                _selectedDeviceId = deviceId;
-              });
-            },
-            onCenterMapOnDevice: _centerMapOnDevice,
-            findDeviceById: _findDeviceById,
-          ),
+          _buildMapTab(),
         ],
       ),
     );
@@ -342,6 +833,55 @@ class _DeviceScreenState extends State<DeviceScreen>
                         onCenterMapOnDevice: _centerMapOnDevice,
                       ),
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMapTab() {
+    return Stack(
+      children: [
+        DeviceMapWidget(
+          mapController: _mapController,
+          devices: _devices,
+          deviceLocations: _deviceLocations,
+          selectedDeviceId: _selectedDeviceId,
+          currentPosition: _currentPosition,
+          geofences: _geofences,
+          currentGeofencePoints: _currentGeofencePoints,
+          isDrawingGeofence: _isDrawingGeofence,
+          isDragging: _isDragging,
+          draggedPointIndex: _draggedPointIndex,
+          onDeviceSelected: (deviceId) {
+            setState(() {
+              _selectedDeviceId = deviceId;
+            });
+          },
+          onCenterMapOnDevice: _centerMapOnDevice,
+          onCenterMapOnCurrentLocation: _centerMapOnCurrentLocation,
+          onMapTap: _onMapTap,
+          onMapLongPress: _onMapLongPress,
+          findDeviceById: _findDeviceById,
+        ),
+        DeviceGeofenceOverlay(
+          isDrawingGeofence: _isDrawingGeofence,
+          isDragging: _isDragging,
+          draggedPointIndex: _draggedPointIndex,
+          currentGeofencePoints: _currentGeofencePoints,
+          geofences: _geofences,
+          isLoadingGeofences: _isLoadingGeofences,
+          onStartDrawing: _startDrawingGeofence,
+          onStopDrawing: _stopDrawingGeofence,
+          onClearPoints: () {
+            setState(() {
+              _currentGeofencePoints.clear();
+              _isDragging = false;
+              _draggedPointIndex = null;
+            });
+          },
+          onLoadGeofences: _loadGeofences,
+          onToggleGeofenceStatus: _toggleGeofenceStatus,
+          onDeleteGeofence: _deleteGeofence,
         ),
       ],
     );

@@ -722,20 +722,13 @@ class _DeviceScreenState extends State<DeviceScreen>
         backgroundColor: theme.colorScheme.surface,
         surfaceTintColor: theme.colorScheme.surface,
         title: Text(
-          'Device Tracking',
+          'SafeSpot - Device Tracking',
           style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w600,
           ),
         ),
-        actions: [
-          IconButton(
-            onPressed: _refreshLocation,
-            icon: Icon(
-              Icons.my_location,
-              color: _isGettingLocation ? Colors.grey : theme.colorScheme.onSurface,
-            ),
-          ),
-        ],
+        // Location refresh button removed
+        actions: [],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Container(

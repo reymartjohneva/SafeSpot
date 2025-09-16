@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'registration_custom_input_field.dart';
 import 'create_account_button.dart';
 
-class RegistrationForm extends StatelessWidget {
+class RegistrationForm extends StatefulWidget {
   final TextEditingController firstNameController;
   final TextEditingController lastNameController;
   final TextEditingController emailController;
@@ -33,124 +33,265 @@ class RegistrationForm extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<RegistrationForm> createState() => _RegistrationFormState();
+}
+
+class _RegistrationFormState extends State<RegistrationForm>
+    with TickerProviderStateMixin {
+  late AnimationController _formController;
+  late Animation<double> _formAnimation;
+  
+  @override
+  void initState() {
+    super.initState();
+    _formController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    
+    _formAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _formController,
+      curve: Curves.easeOutBack,
+    ));
+    
+    _formController.forward();
+  }
+  
+  @override
+  void dispose() {
+    _formController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(32.0),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.2),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Join us text
-          const Center(
-            child: Text(
-              'Join SafeSpot!',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+    return AnimatedBuilder(
+      animation: _formAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _formAnimation.value,
+          child: Container(
+            padding: const EdgeInsets.all(32.0),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withOpacity(0.2),
+                  Colors.white.withOpacity(0.15),
+                  Colors.white.withOpacity(0.1),
+                ],
               ),
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.3),
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 25,
+                  offset: const Offset(0, 15),
+                ),
+                BoxShadow(
+                  color: Colors.white.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(-5, -5),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Welcome text with gradient
+                Center(
+                  child: ShaderMask(
+                    shaderCallback: (bounds) => LinearGradient(
+                      colors: [
+                        Colors.white,
+                        Colors.brown.shade200,
+                      ],
+                    ).createShader(bounds),
+                    child: const Text(
+                      'Join SafeSpot!',
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 35),
+
+                // Full name section with animation
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0, end: 1),
+                  duration: const Duration(milliseconds: 800),
+                  builder: (context, value, child) {
+                    return Transform.translate(
+                      offset: Offset(0, 20 * (1 - value)),
+                      child: Opacity(
+                        opacity: value,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Full Name',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white.withOpacity(0.9),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+
+                            // First name and Last name row
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: CustomInputField(
+                                    controller: widget.firstNameController,
+                                    label: '',
+                                    icon: Icons.person_outline,
+                                    hintText: 'First name',
+                                    enabled: !widget.isLoading,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: CustomInputField(
+                                    controller: widget.lastNameController,
+                                    label: '',
+                                    icon: Icons.person_outline,
+                                    hintText: 'Last name',
+                                    enabled: !widget.isLoading,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 25),
+
+                // Email field with delay animation
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0, end: 1),
+                  duration: const Duration(milliseconds: 1000),
+                  builder: (context, value, child) {
+                    return Transform.translate(
+                      offset: Offset(0, 20 * (1 - value)),
+                      child: Opacity(
+                        opacity: value,
+                        child: CustomInputField(
+                          controller: widget.emailController,
+                          label: 'Email',
+                          icon: Icons.email_outlined,
+                          keyboardType: TextInputType.emailAddress,
+                          enabled: !widget.isLoading,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 25),
+
+                // Mobile field with delay animation
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0, end: 1),
+                  duration: const Duration(milliseconds: 1200),
+                  builder: (context, value, child) {
+                    return Transform.translate(
+                      offset: Offset(0, 20 * (1 - value)),
+                      child: Opacity(
+                        opacity: value,
+                        child: CustomInputField(
+                          controller: widget.mobileController,
+                          label: 'Mobile Number',
+                          icon: Icons.phone_outlined,
+                          keyboardType: TextInputType.phone,
+                          enabled: !widget.isLoading,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 25),
+
+                // Password field with delay animation
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0, end: 1),
+                  duration: const Duration(milliseconds: 1400),
+                  builder: (context, value, child) {
+                    return Transform.translate(
+                      offset: Offset(0, 20 * (1 - value)),
+                      child: Opacity(
+                        opacity: value,
+                        child: CustomInputField.password(
+                          controller: widget.passwordController,
+                          label: 'Password',
+                          obscureText: widget.obscurePassword,
+                          enabled: !widget.isLoading,
+                          onToggleVisibility: widget.onTogglePasswordVisibility,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 25),
+
+                // Confirm Password field with delay animation
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0, end: 1),
+                  duration: const Duration(milliseconds: 1600),
+                  builder: (context, value, child) {
+                    return Transform.translate(
+                      offset: Offset(0, 20 * (1 - value)),
+                      child: Opacity(
+                        opacity: value,
+                        child: CustomInputField.password(
+                          controller: widget.confirmPasswordController,
+                          label: 'Confirm Password',
+                          obscureText: widget.obscureConfirmPassword,
+                          enabled: !widget.isLoading,
+                          onToggleVisibility: widget.onToggleConfirmPasswordVisibility,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 35),
+
+                // Create Account button with delay animation
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0, end: 1),
+                  duration: const Duration(milliseconds: 1800),
+                  builder: (context, value, child) {
+                    return Transform.scale(
+                      scale: value,
+                      child: Opacity(
+                        opacity: value,
+                        child: CreateAccountButton(
+                          isLoading: widget.isLoading,
+                          onPressed: widget.onRegister,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 30),
-
-          // Full name section
-          Text(
-            'Full Name',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.white.withOpacity(0.9),
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // First name and Last name row
-          Row(
-            children: [
-              Expanded(
-                child: CustomInputField(
-                  controller: firstNameController,
-                  label: '',
-                  icon: Icons.person_outline,
-                  hintText: 'First name',
-                  enabled: !isLoading,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: CustomInputField(
-                  controller: lastNameController,
-                  label: '',
-                  icon: Icons.person_outline,
-                  hintText: 'Last name',
-                  enabled: !isLoading,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Email field
-          CustomInputField(
-            controller: emailController,
-            label: 'Email',
-            icon: Icons.email_outlined,
-            keyboardType: TextInputType.emailAddress,
-            enabled: !isLoading,
-          ),
-          const SizedBox(height: 20),
-
-          // Mobile field
-          CustomInputField(
-            controller: mobileController,
-            label: 'Mobile Number',
-            icon: Icons.phone_outlined,
-            keyboardType: TextInputType.phone,
-            enabled: !isLoading,
-          ),
-          const SizedBox(height: 20),
-
-          // Password field
-          CustomInputField.password(
-            controller: passwordController,
-            label: 'Password',
-            obscureText: obscurePassword,
-            enabled: !isLoading,
-            onToggleVisibility: onTogglePasswordVisibility,
-          ),
-          const SizedBox(height: 20),
-
-          // Confirm Password field
-          CustomInputField.password(
-            controller: confirmPasswordController,
-            label: 'Confirm Password',
-            obscureText: obscureConfirmPassword,
-            enabled: !isLoading,
-            onToggleVisibility: onToggleConfirmPasswordVisibility,
-          ),
-          const SizedBox(height: 30),
-
-          // Create Account button
-          CreateAccountButton(
-            isLoading: isLoading,
-            onPressed: onRegister,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

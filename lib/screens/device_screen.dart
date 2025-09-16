@@ -786,6 +786,7 @@ class _DeviceScreenState extends State<DeviceScreen>
                 child: DeviceStatsWidget(
                   devices: _devices,
                   deviceLocations: _deviceLocations,
+                  geofences: _geofences,
                 ),
               ),
               const SizedBox(width: 16),

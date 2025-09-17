@@ -6,6 +6,7 @@ import 'pages/registration_page.dart';
 import 'services/auth_service.dart';
 import 'screens/profile_screen.dart';
 import 'widgets/nav_bar.dart';
+import 'screens/notifications_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -205,7 +206,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
           _buildInformationScreen(),
           
           // Notifications Screen
-          _buildNotificationsScreen(),
+          const NotificationsScreen(),
           
           // Profile Screen
           const ProfileScreen(),
@@ -268,59 +269,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
                   title: 'About SafeSpot',
                   subtitle: 'Version info and app details',
                   onTap: () {},
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNotificationsScreen() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 60),
-          Text(
-            'Notifications',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.notifications_none,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'No notifications yet',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Device alerts and location notifications\nwill appear here',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
-                  textAlign: TextAlign.center,
                 ),
               ],
             ),

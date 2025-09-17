@@ -7,7 +7,7 @@ import 'dart:async';
 import '../services/device_service.dart';
 import '../services/geofence_service.dart';
 import 'widgets/device_list_widget.dart';
-import 'widgets/device_map_widget.dart';
+import 'package:safe_spot/screens/widgets/map/device_map_widget.dart';
 import 'widgets/device_stats_widget.dart';
 import 'widgets/add_device_form_widget.dart';
 import 'widgets/device_geofence_overlay.dart';

@@ -6,6 +6,7 @@ import 'pages/registration_page.dart';
 import 'services/auth_service.dart';
 import 'screens/profile_screen.dart';
 import 'widgets/nav_bar.dart';
+import 'screens/notifications_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -205,7 +206,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
           _buildInformationScreen(),
           
           // Notifications Screen
-          _buildNotificationsScreen(),
+          const NotificationsScreen(),
           
           // Profile Screen
           const ProfileScreen(),

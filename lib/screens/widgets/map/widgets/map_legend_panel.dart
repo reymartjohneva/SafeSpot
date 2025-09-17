@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import '../../../services/geofence_service.dart';
+import 'package:safe_spot/services/geofence_service.dart';
 
 class MapLegendPanel extends StatelessWidget {
   final Position? currentPosition;

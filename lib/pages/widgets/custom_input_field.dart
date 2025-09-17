@@ -4,17 +4,38 @@ class CustomInputField extends StatefulWidget {
   final TextEditingController controller;
   final String label;
   final IconData icon;
+  final String? hintText;
   final TextInputType? keyboardType;
   final bool enabled;
+  final bool obscureText;
+  final VoidCallback? onToggleVisibility;
+  final bool isPasswordField;
 
   const CustomInputField({
-    super.key,
+    Key? key,
     required this.controller,
     required this.label,
     required this.icon,
+    this.hintText,
     this.keyboardType,
     this.enabled = true,
-  });
+    this.obscureText = false,
+    this.onToggleVisibility,
+    this.isPasswordField = false,
+  }) : super(key: key);
+
+  const CustomInputField.password({
+    Key? key,
+    required this.controller,
+    required this.label,
+    required this.obscureText,
+    required this.enabled,
+    required this.onToggleVisibility,
+    this.hintText,
+  }) : icon = Icons.lock_outline,
+       keyboardType = null,
+       isPasswordField = true,
+       super(key: key);
 
   @override
   State<CustomInputField> createState() => _CustomInputFieldState();
@@ -28,7 +49,6 @@ class _CustomInputFieldState extends State<CustomInputField>
   late Animation<double> _shadowAnimation;
   
   bool _isFocused = false;
-  bool _hasText = false;
 
   @override
   void initState() {
@@ -62,20 +82,11 @@ class _CustomInputFieldState extends State<CustomInputField>
       parent: _focusController,
       curve: Curves.easeInOut,
     ));
-    
-    widget.controller.addListener(_checkText);
-  }
-  
-  void _checkText() {
-    setState(() {
-      _hasText = widget.controller.text.isNotEmpty;
-    });
   }
 
   @override
   void dispose() {
     _focusController.dispose();
-    widget.controller.removeListener(_checkText);
     super.dispose();
   }
 
@@ -89,18 +100,20 @@ class _CustomInputFieldState extends State<CustomInputField>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: _isFocused 
-                      ? Colors.brown.shade300
-                      : Colors.white.withOpacity(0.9),
+              if (widget.label.isNotEmpty) ...[
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 200),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: _isFocused 
+                        ? Colors.brown.shade300
+                        : Colors.white.withOpacity(0.9),
+                  ),
+                  child: Text(widget.label),
                 ),
-                child: Text(widget.label),
-              ),
-              const SizedBox(height: 8),
+                const SizedBox(height: 8),
+              ],
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -145,6 +158,7 @@ class _CustomInputFieldState extends State<CustomInputField>
                   child: TextField(
                     controller: widget.controller,
                     keyboardType: widget.keyboardType,
+                    obscureText: widget.obscureText,
                     enabled: widget.enabled,
                     style: const TextStyle(
                       color: Colors.white,
@@ -155,24 +169,30 @@ class _CustomInputFieldState extends State<CustomInputField>
                       prefixIcon: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         child: Icon(
-                          widget.icon, 
+                          widget.icon,
                           color: _isFocused 
                               ? Colors.brown.shade300
                               : Colors.white.withOpacity(0.7),
                           size: 22,
                         ),
                       ),
-                      suffixIcon: _hasText && widget.enabled
-                          ? IconButton(
-                              icon: Icon(
-                                Icons.clear,
-                                color: Colors.white.withOpacity(0.6),
-                                size: 20,
-                              ),
-                              onPressed: () {
-                                widget.controller.clear();
-                                _checkText();
+                      suffixIcon: widget.isPasswordField
+                          ? AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 200),
+                              transitionBuilder: (child, animation) {
+                                return ScaleTransition(scale: animation, child: child);
                               },
+                              child: IconButton(
+                                key: ValueKey(widget.obscureText),
+                                icon: Icon(
+                                  widget.obscureText ? Icons.visibility_off : Icons.visibility,
+                                  color: _isFocused 
+                                      ? Colors.brown.shade300
+                                      : Colors.white.withOpacity(0.7),
+                                  size: 22,
+                                ),
+                                onPressed: widget.enabled ? widget.onToggleVisibility : null,
+                              ),
                             )
                           : null,
                       border: InputBorder.none,
@@ -180,7 +200,7 @@ class _CustomInputFieldState extends State<CustomInputField>
                         horizontal: 20,
                         vertical: 16,
                       ),
-                      hintText: 'Enter your ${widget.label.toLowerCase()}',
+                      hintText: widget.hintText ?? 'Enter your ${widget.label.toLowerCase()}',
                       hintStyle: TextStyle(
                         color: Colors.white.withOpacity(0.5),
                         fontSize: 16,

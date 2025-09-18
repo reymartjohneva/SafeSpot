@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:safe_spot/services/geofence_service.dart';
 
-class MapLegendPanel extends StatelessWidget {
+class MapLegendPanel extends StatefulWidget {
   final Position? currentPosition;
   final List<Geofence> geofences;
   final BoxConstraints constraints;
@@ -15,45 +15,96 @@ class MapLegendPanel extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<MapLegendPanel> createState() => _MapLegendPanelState();
+}
+
+class _MapLegendPanelState extends State<MapLegendPanel>
+    with SingleTickerProviderStateMixin {
+  bool _isExpanded = false;
+  late AnimationController _animationController;
+  late Animation<double> _expandAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _expandAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _toggleExpanded() {
+    setState(() {
+      _isExpanded = !_isExpanded;
+      if (_isExpanded) {
+        _animationController.forward();
+      } else {
+        _animationController.reverse();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Positioned(
       bottom: 16,
       left: 16,
-      child: Card(
-        elevation: 8,
-        shadowColor: Colors.black26,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Container(
-          constraints: BoxConstraints(
-            maxWidth: constraints.maxWidth > 400 ? 280 : constraints.maxWidth - 120,
-          ),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.white,
-                Colors.grey.shade50,
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+      child: GestureDetector(
+        onTap: _toggleExpanded,
+        child: Card(
+          elevation: 8,
+          shadowColor: Colors.black26,
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.grey.shade200,
-              width: 1,
-            ),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildLegendHeader(context),
-                const SizedBox(height: 16),
-                ..._buildLegendItems(context),
-              ],
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: widget.constraints.maxWidth > 400 ? 280 : widget.constraints.maxWidth - 120,
+            ),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.white,
+                  Colors.grey.shade50,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.grey.shade200,
+                width: 1,
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildLegendHeader(context),
+                  SizeTransition(
+                    sizeFactor: _expandAnimation,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 16),
+                        ..._buildLegendItems(context),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -77,11 +128,22 @@ class MapLegendPanel extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        Text(
-          'Map Legend',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Colors.grey.shade700,
+        Expanded(
+          child: Text(
+            'Map Legend',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade700,
+            ),
+          ),
+        ),
+        AnimatedRotation(
+          turns: _isExpanded ? 0.5 : 0,
+          duration: const Duration(milliseconds: 300),
+          child: Icon(
+            Icons.expand_more,
+            size: 20,
+            color: Colors.grey.shade600,
           ),
         ),
       ],
@@ -105,7 +167,7 @@ class MapLegendPanel extends StatelessWidget {
       ),
     ];
 
-    if (currentPosition != null) {
+    if (widget.currentPosition != null) {
       items.addAll([
         const SizedBox(height: 12),
         _buildLegendItem(
@@ -117,7 +179,7 @@ class MapLegendPanel extends StatelessWidget {
       ]);
     }
 
-    if (geofences.isNotEmpty) {
+    if (widget.geofences.isNotEmpty) {
       items.addAll([
         const SizedBox(height: 12),
         _buildLegendItem(

@@ -721,13 +721,25 @@ class _DeviceScreenState extends State<DeviceScreen>
         elevation: 0,
         backgroundColor: theme.colorScheme.surface,
         surfaceTintColor: theme.colorScheme.surface,
-        title: Text(
-          'SafeSpot - Device Tracking',
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+        title: Row(
+          children: [
+            // App Logo
+            Image.asset(
+              'assets/app1_icon.png',
+              height: 50,
+              width: 50,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 12),
+            // App Name
+            Text(
+              'SafeSpot',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
-        // Location refresh button removed
         actions: [],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),

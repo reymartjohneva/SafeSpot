@@ -35,7 +35,6 @@ class _DeviceScreenState extends State<DeviceScreen>
   bool _isLoading = false;
   bool _isAddingDevice = false;
   String? _selectedDeviceId;
-  bool _showAddDeviceForm = false;
 
   // Location state variables
   Position? _currentPosition;
@@ -306,6 +305,73 @@ class _DeviceScreenState extends State<DeviceScreen>
     }
   }
 
+  // Show Add Device Modal
+  void _showAddDeviceModal() {
+    _deviceIdController.clear();
+    _deviceNameController.clear();
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: DraggableScrollableSheet(
+            initialChildSize: 0.6,
+            minChildSize: 0.4,
+            maxChildSize: 0.8,
+            expand: false,
+            builder: (context, scrollController) => Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Modal handle
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: scrollController,
+                      padding: const EdgeInsets.all(24),
+                      child: AddDeviceFormWidget(
+                        deviceIdController: _deviceIdController,
+                        deviceNameController: _deviceNameController,
+                        isAddingDevice: _isAddingDevice,
+                        onAddDevice: () async {
+                          setModalState(() => _isAddingDevice = true);
+                          await _addDevice();
+                          setModalState(() => _isAddingDevice = false);
+                          if (mounted && !_isAddingDevice) {
+                            Navigator.pop(context);
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _addDevice() async {
     final deviceId = _deviceIdController.text.trim();
     final deviceName = _deviceNameController.text.trim();
@@ -322,7 +388,6 @@ class _DeviceScreenState extends State<DeviceScreen>
       DeviceUtils.showSuccessSnackBar(context, 'Device "$deviceName" added successfully');
       _deviceIdController.clear();
       _deviceNameController.clear();
-      setState(() => _showAddDeviceForm = false);
       await _loadDevices();
     } catch (e) {
       DeviceUtils.showErrorSnackBar(context, 'Failed to add device: $e');
@@ -782,47 +847,36 @@ class _DeviceScreenState extends State<DeviceScreen>
     
     return Column(
       children: [
-        // Header with stats and add button
+        // Stats widget with full width
         Container(
           padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Expanded(
-                child: DeviceStatsWidget(
-                  devices: _devices,
-                  deviceLocations: _deviceLocations,
-                  geofences: _geofences,
-                ),
-              ),
-              const SizedBox(width: 16),
-              FloatingActionButton.extended(
-                onPressed: () {
-                  setState(() {
-                    _showAddDeviceForm = !_showAddDeviceForm;
-                  });
-                },
-                icon: Icon(_showAddDeviceForm ? Icons.close : Icons.add),
-                label: Text(_showAddDeviceForm ? 'Cancel' : 'Add Device'),
-                backgroundColor: theme.colorScheme.primary,
-                foregroundColor: Colors.white,
-              ),
-            ],
+          child: DeviceStatsWidget(
+            devices: _devices,
+            deviceLocations: _deviceLocations,
+            geofences: _geofences,
           ),
         ),
 
-        // Add device form (collapsible)
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          height: _showAddDeviceForm ? null : 0,
-          child: _showAddDeviceForm 
-              ? AddDeviceFormWidget(
-                  deviceIdController: _deviceIdController,
-                  deviceNameController: _deviceNameController,
-                  isAddingDevice: _isAddingDevice,
-                  onAddDevice: _addDevice,
-                )
-              : null,
+        // Add device button below stats
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _showAddDeviceModal,
+            icon: const Icon(Icons.add),
+            label: const Text('Add Device'),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
         ),
+        
+        const SizedBox(height: 16),
 
         // Devices list
         Expanded(
@@ -929,11 +983,7 @@ class _DeviceScreenState extends State<DeviceScreen>
           ),
           const SizedBox(height: 32),
           ElevatedButton.icon(
-            onPressed: () {
-              setState(() {
-                _showAddDeviceForm = true;
-              });
-            },
+            onPressed: _showAddDeviceModal,
             icon: const Icon(Icons.add),
             label: const Text('Add Device'),
             style: ElevatedButton.styleFrom(

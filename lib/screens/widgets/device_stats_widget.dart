@@ -75,7 +75,6 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
     final isTablet = size.width > 600;
     
@@ -95,29 +94,18 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
             child: Container(
               margin: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.primaryContainer,
-                    theme.colorScheme.secondaryContainer.withOpacity(0.8),
-                    theme.colorScheme.primaryContainer.withOpacity(0.6),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  stops: const [0.0, 0.5, 1.0],
-                ),
+                color: Colors.black87, // Dark background like navbar
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: theme.colorScheme.shadow.withOpacity(0.15),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                    spreadRadius: 0,
-                  ),
-                  BoxShadow(
-                    color: theme.colorScheme.primary.withOpacity(0.1),
+                    color: Colors.black.withOpacity(0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
-                    spreadRadius: -2,
+                  ),
+                  BoxShadow(
+                    color: const Color(0xFFFF8A50).withOpacity(0.1),
+                    blurRadius: 25,
+                    offset: const Offset(0, 5),
                   ),
                 ],
               ),
@@ -129,21 +117,21 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildHeader(theme),
+                      _buildHeader(isTablet),
                       SizedBox(height: isTablet ? 20 : 16),
                       
                       // Device Stats Section
-                      _buildDeviceSection(theme, activeDevices, devicesWithLocation, isTablet),
+                      _buildDeviceSection(activeDevices, devicesWithLocation, isTablet),
                       
                       SizedBox(height: isTablet ? 20 : 16),
                       
                       // Progress Indicators
-                      _buildProgressSection(theme, activeDevices, devicesWithLocation, isTablet),
+                      _buildProgressSection(activeDevices, devicesWithLocation, isTablet),
                       
                       SizedBox(height: isTablet ? 20 : 16),
                       
                       // Geofence Section
-                      _buildGeofenceSection(theme, activeGeofences, inactiveGeofences, isTablet),
+                      _buildGeofenceSection(activeGeofences, inactiveGeofences, isTablet),
                     ],
                   ),
                 ),
@@ -155,7 +143,7 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
     );
   }
 
-  Widget _buildHeader(ThemeData theme) {
+  Widget _buildHeader(bool isTablet) {
     return AnimatedBuilder(
       animation: _pulseAnimation,
       builder: (context, child) {
@@ -164,14 +152,21 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.1),
+                  color: const Color(0xFFFF8A50), // Orange accent
                   borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFF8A50).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.dashboard_rounded,
-                  color: theme.colorScheme.primary,
+                  color: Colors.white,
                   size: 24,
                 ),
               ),
@@ -180,18 +175,20 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'System Overview',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        color: theme.colorScheme.onPrimaryContainer,
+                      style: TextStyle(
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
+                        color: Colors.white,
                         letterSpacing: -0.5,
                       ),
                     ),
                     Text(
                       'Real-time device & geofence monitoring',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onPrimaryContainer.withOpacity(0.7),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade400,
                       ),
                     ),
                   ],
@@ -204,11 +201,9 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
     );
   }
 
-  Widget _buildDeviceSection(ThemeData theme, int activeDevices, int devicesWithLocation, bool isTablet) {
+  Widget _buildDeviceSection(int activeDevices, int devicesWithLocation, bool isTablet) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final itemWidth = (constraints.maxWidth - 32) / 3; // Account for spacing
-        
         return Row(
           children: [
             Expanded(
@@ -216,8 +211,7 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
                 'Total Devices', 
                 widget.devices.length.toString(), 
                 Icons.devices_rounded, 
-                theme,
-                color: theme.colorScheme.primary,
+                color: const Color(0xFFFF8A50), // Orange
                 delay: 0,
                 isTablet: isTablet,
               ),
@@ -228,8 +222,7 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
                 'Active', 
                 activeDevices.toString(), 
                 Icons.power_settings_new_rounded, 
-                theme,
-                color: Colors.green,
+                color: const Color(0xFF4CAF50), // Green
                 delay: 100,
                 isTablet: isTablet,
               ),
@@ -240,8 +233,7 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
                 'Located', 
                 devicesWithLocation.toString(), 
                 Icons.location_on_rounded, 
-                theme,
-                color: Colors.blue,
+                color: const Color(0xFF2196F3), // Blue
                 delay: 200,
                 isTablet: isTablet,
               ),
@@ -252,7 +244,7 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
     );
   }
 
-  Widget _buildProgressSection(ThemeData theme, int activeDevices, int devicesWithLocation, bool isTablet) {
+  Widget _buildProgressSection(int activeDevices, int devicesWithLocation, bool isTablet) {
     final deviceActiveRate = widget.devices.isNotEmpty ? activeDevices / widget.devices.length : 0.0;
     final locationRate = widget.devices.isNotEmpty ? devicesWithLocation / widget.devices.length : 0.0;
 
@@ -261,30 +253,28 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
         _buildProgressIndicator(
           'Device Activity Rate',
           deviceActiveRate,
-          Colors.green,
-          theme,
+          const Color(0xFF4CAF50),
           isTablet,
         ),
         const SizedBox(height: 12),
         _buildProgressIndicator(
           'Location Coverage',
           locationRate,
-          Colors.blue,
-          theme,
+          const Color(0xFF2196F3),
           isTablet,
         ),
       ],
     );
   }
 
-  Widget _buildGeofenceSection(ThemeData theme, int activeGeofences, int inactiveGeofences, bool isTablet) {
+  Widget _buildGeofenceSection(int activeGeofences, int inactiveGeofences, bool isTablet) {
     return Container(
       padding: EdgeInsets.all(isTablet ? 16 : 12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface.withOpacity(0.5),
+        color: Colors.grey.shade900.withOpacity(0.5),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.2),
+          color: Colors.grey.shade700,
           width: 1,
         ),
       ),
@@ -295,15 +285,16 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
             children: [
               Icon(
                 Icons.layers_rounded,
-                color: theme.colorScheme.primary,
+                color: const Color(0xFFFF8A50),
                 size: isTablet ? 20 : 18,
               ),
               const SizedBox(width: 8),
-              Text(
+              const Text(
                 'Geofences',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: theme.colorScheme.onSurface,
+                style: TextStyle(
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
+                  color: Colors.white,
                 ),
               ),
             ],
@@ -317,8 +308,7 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
                   'Total',
                   widget.geofences.length.toString(),
                   Icons.layers_outlined,
-                  theme.colorScheme.primary,
-                  theme,
+                  const Color(0xFFFF8A50),
                   isTablet,
                 ),
               ),
@@ -328,8 +318,7 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
                   'Active',
                   activeGeofences.toString(),
                   Icons.check_circle_rounded,
-                  Colors.green,
-                  theme,
+                  const Color(0xFF4CAF50),
                   isTablet,
                 ),
               ),
@@ -339,8 +328,7 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
                   'Inactive',
                   inactiveGeofences.toString(),
                   Icons.pause_circle_rounded,
-                  Colors.orange,
-                  theme,
+                  const Color(0xFFFF9800),
                   isTablet,
                 ),
               ),
@@ -354,8 +342,7 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
   Widget _buildAnimatedStatCard(
     String label, 
     String value, 
-    IconData icon, 
-    ThemeData theme, {
+    IconData icon, {
     required Color color,
     required int delay,
     required bool isTablet,
@@ -370,8 +357,12 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
           child: Container(
             padding: EdgeInsets.all(isTablet ? 16 : 12),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surface.withOpacity(0.8),
+              color: Colors.grey.shade900.withOpacity(0.6),
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.grey.shade800,
+                width: 1,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: color.withOpacity(0.2),
@@ -386,7 +377,7 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
                 Container(
                   padding: EdgeInsets.all(isTablet ? 8 : 6),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -399,9 +390,10 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
                 FittedBox(
                   child: Text(
                     value,
-                    style: (isTablet ? theme.textTheme.headlineSmall : theme.textTheme.titleLarge)?.copyWith(
+                    style: TextStyle(
+                      fontSize: isTablet ? 24 : 20,
                       fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -410,9 +402,9 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
                   child: Text(
                     label,
                     textAlign: TextAlign.center,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    style: TextStyle(
                       fontSize: isTablet ? 12 : 10,
+                      color: Colors.grey.shade400,
                     ),
                   ),
                 ),
@@ -428,7 +420,6 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
     String label,
     double progress,
     Color color,
-    ThemeData theme,
     bool isTablet,
   ) {
     return TweenAnimationBuilder<double>(
@@ -445,17 +436,19 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
                 Flexible(
                   child: Text(
                     label,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer,
+                    style: const TextStyle(
+                      fontSize: 14,
                       fontWeight: FontWeight.w500,
+                      color: Colors.white,
                     ),
                   ),
                 ),
                 Text(
                   '${(animatedProgress * 100).toInt()}%',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onPrimaryContainer.withOpacity(0.8),
+                  style: TextStyle(
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade400,
                   ),
                 ),
               ],
@@ -464,7 +457,7 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
             Container(
               height: isTablet ? 8 : 6,
               decoration: BoxDecoration(
-                color: theme.colorScheme.surface.withOpacity(0.3),
+                color: Colors.grey.shade800,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: FractionallySizedBox(
@@ -498,14 +491,17 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
     String value,
     IconData icon,
     Color color,
-    ThemeData theme,
     bool isTablet,
   ) {
     return Container(
       padding: EdgeInsets.all(isTablet ? 12 : 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1,
+        ),
       ),
       child: Column(
         children: [
@@ -518,18 +514,19 @@ class _DeviceStatsWidgetState extends State<DeviceStatsWidget>
           FittedBox(
             child: Text(
               value,
-              style: theme.textTheme.titleMedium?.copyWith(
+              style: const TextStyle(
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
+                color: Colors.white,
               ),
             ),
           ),
           FittedBox(
             child: Text(
               label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
+              style: TextStyle(
                 fontSize: isTablet ? 10 : 9,
+                color: Colors.grey.shade400,
               ),
             ),
           ),

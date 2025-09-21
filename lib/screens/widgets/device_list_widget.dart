@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../services/device_service.dart';
-import '../../../utils/device_utils.dart';
+import 'package:safe_spot/services/device_service.dart';
+import 'package:safe_spot/utils/device_utils.dart';
 
 class DeviceListWidget extends StatefulWidget {
   final List<Device> devices;

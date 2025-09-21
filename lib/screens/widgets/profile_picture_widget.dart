@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:safe_spot/services/auth_service.dart';
+import 'package:safe_spot/models/user_profile.dart'; // Import from models instead
 import 'package:safe_spot/utils/profile_utils.dart';
 
 class ProfilePictureWidget extends StatelessWidget {

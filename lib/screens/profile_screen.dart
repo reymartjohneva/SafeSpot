@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../services/auth_service.dart';
+import 'package:safe_spot/services/auth_service.dart';
 import 'widgets/profile_picture_widget.dart';
 import 'widgets/profile_info_card.dart';
 import 'widgets/image_picker_bottom_sheet.dart';
-import '../utils/profile_utils.dart';
+import 'package:safe_spot/utils/profile_utils.dart';
+import 'package:safe_spot/models/user_profile.dart';
+
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});

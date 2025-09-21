@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../services/device_service.dart';
-import '../../../services/geofence_service.dart';
+import 'package:safe_spot/services/device_service.dart';
+import 'package:safe_spot/services/geofence_service.dart';
 
 class DeviceStatsWidget extends StatefulWidget {
   final List<Device> devices;

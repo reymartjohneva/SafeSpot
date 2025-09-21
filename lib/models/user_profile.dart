@@ -6,7 +6,7 @@ class UserProfile {
   final String lastName;
   final String mobile;
   final String fullName;
-  final String? profileImageUrl; // Added for profile image
+  final String? avatarUrl; // Use avatarUrl instead of profileImageUrl for consistency
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -17,7 +17,7 @@ class UserProfile {
     required this.lastName,
     required this.mobile,
     required this.fullName,
-    this.profileImageUrl,
+    this.avatarUrl,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -30,7 +30,7 @@ class UserProfile {
       lastName: json['last_name'] ?? '',
       mobile: json['mobile'] ?? '',
       fullName: json['full_name'] ?? '',
-      profileImageUrl: json['profile_image_url'],
+      avatarUrl: json['avatar_url'], // Match the field name used in auth_service.dart
       createdAt:
           json['created_at'] != null
               ? DateTime.parse(json['created_at'])
@@ -50,7 +50,7 @@ class UserProfile {
       'last_name': lastName,
       'mobile': mobile,
       'full_name': fullName,
-      'profile_image_url': profileImageUrl,
+      'avatar_url': avatarUrl, // Match the field name used in auth_service.dart
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -63,7 +63,7 @@ class UserProfile {
     String? lastName,
     String? mobile,
     String? fullName,
-    String? profileImageUrl,
+    String? avatarUrl,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -74,7 +74,7 @@ class UserProfile {
       lastName: lastName ?? this.lastName,
       mobile: mobile ?? this.mobile,
       fullName: fullName ?? this.fullName,
-      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

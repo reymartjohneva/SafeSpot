@@ -4,14 +4,14 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:async';
-import '../services/device_service.dart';
-import '../services/geofence_service.dart';
-import 'widgets/device_list_widget.dart';
+import 'package:safe_spot/services/device_service.dart';
+import 'package:safe_spot/services/geofence_service.dart';
+import 'package:safe_spot/screens/widgets/device_list_widget.dart';
 import 'package:safe_spot/screens/widgets/map/device_map_widget.dart';
-import 'widgets/device_stats_widget.dart';
-import 'widgets/add_device_form_widget.dart';
-import 'widgets/device_geofence_overlay.dart';
-import '../utils/device_utils.dart';
+import 'package:safe_spot/screens/widgets/device_stats_widget.dart';
+import 'package:safe_spot/screens/widgets/add_device_form_widget.dart';
+import 'package:safe_spot/screens/widgets/device_geofence_overlay.dart';
+import 'package:safe_spot/utils/device_utils.dart';
 
 class DeviceScreen extends StatefulWidget {
   const DeviceScreen({Key? key}) : super(key: key);

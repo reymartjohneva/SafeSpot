@@ -7,7 +7,7 @@ import 'widgets/profile_info_card.dart';
 import 'widgets/image_picker_bottom_sheet.dart';
 import 'package:safe_spot/utils/profile_utils.dart';
 import 'package:safe_spot/models/user_profile.dart';
-import 'package:safe_spot/screens/edit_profile_screen.dart'; // Import the edit profile screen
+import 'package:safe_spot/screens/edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -20,7 +20,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   UserProfile? userProfile;
   bool isLoading = true;
   bool isUploadingImage = false;
-  bool isLoggingOut = false; // Add this to track logout state
+  bool isLoggingOut = false;
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -33,7 +33,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFF1A1A1A), // Dark background like navbar
       appBar: _buildAppBar(),
       body: _buildBody(),
     );
@@ -45,20 +45,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'Profile',
         style: TextStyle(
           fontWeight: FontWeight.w600,
-          color: Color(0xFF1F2937),
+          color: Colors.white, // White text for dark theme
         ),
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.black87, // Match navbar color
       elevation: 0,
-      shadowColor: Colors.black.withOpacity(0.1),
-      surfaceTintColor: Colors.white,
+      shadowColor: Colors.black.withOpacity(0.3),
+      surfaceTintColor: Colors.black87,
       actions: [
         Container(
           margin: const EdgeInsets.only(right: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFFFEF2F2),
+            color: const Color(0xFF2D2D2D), // Dark container
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFFECACA)),
+            border: Border.all(color: const Color(0xFF404040)),
           ),
           child: IconButton(
             icon: isLoggingOut 
@@ -67,12 +67,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFDC2626)),
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF8A50)), // Orange accent
                   ),
                 )
               : const Icon(
                   Icons.logout_rounded,
-                  color: Color(0xFFDC2626),
+                  color: Color(0xFFFF8A50), // Orange accent color
                   size: 20,
                 ),
             onPressed: isLoggingOut ? null : _handleLogout,
@@ -86,7 +86,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (isLoading) {
       return const Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF8A50)), // Orange accent
         ),
       );
     }
@@ -97,7 +97,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           'No profile data found.',
           style: TextStyle(
             fontSize: 16,
-            color: Color(0xFF6B7280),
+            color: Color(0xFFB0B0B0), // Light grey for dark theme
           ),
         ),
       );
@@ -122,11 +122,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       margin: const EdgeInsets.all(20),
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF2D2D2D), // Dark card background
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFF404040), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -145,7 +146,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF111827),
+              color: Colors.white, // White text
               letterSpacing: -0.5,
             ),
             textAlign: TextAlign.center,
@@ -157,14 +158,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               vertical: 8,
             ),
             decoration: BoxDecoration(
-              color: const Color(0xFF6366F1).withOpacity(0.08),
+              color: const Color(0xFFFF8A50).withOpacity(0.15), // Orange accent background
               borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFFF8A50).withOpacity(0.3)),
             ),
             child: Text(
               userProfile!.email,
               style: const TextStyle(
                 fontSize: 15,
-                color: Color(0xFF6366F1),
+                color: Color(0xFFFF8A50), // Orange accent text
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -183,18 +185,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: Icons.phone_rounded,
             title: 'Mobile Number',
             value: userProfile!.mobile,
-            color: const Color(0xFF10B981),
-            backgroundColor: const Color(0xFFF0FDF4),
-            borderColor: const Color(0xFFBBF7D0),
+            color: const Color(0xFFFF8A50), // Orange accent
+            backgroundColor: const Color(0xFF2D2D2D), // Dark background
+            borderColor: const Color(0xFF404040),
           ),
           const SizedBox(height: 16),
           ProfileInfoCard(
             icon: Icons.calendar_today_rounded,
             title: 'Member Since',
             value: ProfileUtils.formatJoinDate(userProfile!.createdAt),
-            color: const Color(0xFF8B5CF6),
-            backgroundColor: const Color(0xFFFAF5FF),
-            borderColor: const Color(0xFFDDD6FE),
+            color: const Color(0xFFFF8A50), // Orange accent
+            backgroundColor: const Color(0xFF2D2D2D), // Dark background
+            borderColor: const Color(0xFF404040),
           ),
         ],
       ),
@@ -209,10 +211,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: ElevatedButton(
         onPressed: _editProfile,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF6366F1),
+          backgroundColor: const Color(0xFFFF8A50), // Orange accent
           foregroundColor: Colors.white,
           elevation: 0,
-          shadowColor: const Color(0xFF6366F1).withOpacity(0.3),
+          shadowColor: const Color(0xFFFF8A50).withOpacity(0.3),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -235,19 +237,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Add this new method to handle logout directly
   Future<void> _handleLogout() async {
-    // Option 1: Handle logout directly without dialog
     await _performLogout();
-    
-    // Option 2: Show dialog first (uncomment this and comment above if you want dialog)
-    // final bool? confirmed = await _showLogoutDialog();
-    // if (confirmed == true) {
-    //   await _performLogout();
-    // }
   }
 
-  // Add this method to perform the actual logout
   Future<void> _performLogout() async {
     if (isLoggingOut) return;
     
@@ -256,19 +249,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
 
     try {
-      // Call the signOut method from AuthService (returns AuthResult)
       final result = await AuthService.signOut();
       
       if (result.success) {
-        // Navigate to login screen and clear all previous routes
         if (mounted) {
           Navigator.of(context).pushNamedAndRemoveUntil(
-            '/login', // Replace with your login route name
+            '/login',
             (Route<dynamic> route) => false,
           );
         }
       } else {
-        // Handle logout failure
         setState(() {
           isLoggingOut = false;
         });
@@ -277,7 +267,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(result.message),
-              backgroundColor: const Color(0xFFDC2626),
+              backgroundColor: const Color(0xFFFF4444), // Red for errors in dark theme
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -298,7 +288,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Logout failed: $e'),
-            backgroundColor: const Color(0xFFDC2626),
+            backgroundColor: const Color(0xFFFF4444),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -310,7 +300,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // Profile management methods
   Future<void> _loadUserProfile() async {
     try {
       print('Loading user profile...');
@@ -324,7 +313,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         });
         print('Profile loaded from database successfully');
       } else {
-        // Fallback to user metadata if profile table doesn't exist
         final user = AuthService.currentUser;
         print('User metadata: ${user?.userMetadata}');
 
@@ -357,7 +345,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error loading profile: $e'),
-            backgroundColor: const Color(0xFFDC2626),
+            backgroundColor: const Color(0xFFFF4444),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -406,7 +394,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    Navigator.pop(context); // Close bottom sheet
+    Navigator.pop(context);
 
     try {
       final XFile? image = await _picker.pickImage(
@@ -434,7 +422,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(result.message),
-              backgroundColor: const Color(0xFF059669),
+              backgroundColor: const Color(0xFF4CAF50), // Green for success in dark theme
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -450,7 +438,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(result.message),
-              backgroundColor: const Color(0xFFDC2626),
+              backgroundColor: const Color(0xFFFF4444),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -468,7 +456,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error picking image: $e'),
-          backgroundColor: const Color(0xFFDC2626),
+          backgroundColor: const Color(0xFFFF4444),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -480,7 +468,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _deleteProfilePicture() async {
-    Navigator.pop(context); // Close bottom sheet
+    Navigator.pop(context);
 
     final bool? confirmed = await ProfileUtils.showDeleteConfirmationDialog(context);
 
@@ -499,7 +487,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result.message),
-            backgroundColor: const Color(0xFF059669),
+            backgroundColor: const Color(0xFF4CAF50),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -513,7 +501,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result.message),
-            backgroundColor: const Color(0xFFDC2626),
+            backgroundColor: const Color(0xFFFF4444),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -525,7 +513,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // Updated edit profile method to navigate to edit screen
   Future<void> _editProfile() async {
     if (userProfile == null) return;
 
@@ -535,7 +522,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
 
-    // If the edit was successful, reload the profile
     if (result == true) {
       await _loadUserProfile();
     }

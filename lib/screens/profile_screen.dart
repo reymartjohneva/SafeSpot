@@ -7,7 +7,7 @@ import 'widgets/profile_info_card.dart';
 import 'widgets/image_picker_bottom_sheet.dart';
 import 'package:safe_spot/utils/profile_utils.dart';
 import 'package:safe_spot/models/user_profile.dart';
-
+import 'package:safe_spot/screens/edit_profile_screen.dart'; // Import the edit profile screen
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -525,16 +525,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _editProfile() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Edit profile functionality coming soon!'),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        duration: const Duration(seconds: 2),
+  // Updated edit profile method to navigate to edit screen
+  Future<void> _editProfile() async {
+    if (userProfile == null) return;
+
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (context) => EditProfileScreen(userProfile: userProfile!),
       ),
     );
+
+    // If the edit was successful, reload the profile
+    if (result == true) {
+      await _loadUserProfile();
+    }
   }
 }

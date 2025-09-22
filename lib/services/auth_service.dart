@@ -159,7 +159,6 @@ class AuthService {
   }
 
   /// Upload profile picture and update user profile
-  /// Upload profile picture and update user profile
   static Future<AuthResult> uploadProfilePicture({
     required File imageFile,
     String? fileName,
@@ -416,7 +415,7 @@ class AuthService {
     }
   }
 
-  /// Update user profile
+  /// Update user profile (existing method)
   static Future<AuthResult> updateProfile({
     String? firstName,
     String? lastName,
@@ -460,6 +459,65 @@ class AuthService {
       return AuthResult(
         success: false,
         message: 'Failed to update profile. Please try again.',
+      );
+    }
+  }
+
+  /// Update user profile with flexible data (NEW METHOD FOR EDIT PROFILE SCREEN)
+  static Future<AuthResult> updateUserProfile(Map<String, dynamic> updatedData) async {
+    try {
+      final user = currentUser;
+      if (user == null) {
+        return AuthResult(
+          success: false,
+          message: 'No authenticated user found',
+        );
+      }
+
+      print('Updating user profile with data: $updatedData');
+
+      // Update user metadata in Supabase Auth
+      final response = await _supabase.auth.updateUser(
+        UserAttributes(
+          data: updatedData,
+        ),
+      );
+
+      if (response.user != null) {
+        print('User metadata updated successfully');
+        
+        // Also update the profile table if it exists
+        try {
+          await _supabase
+              .from('profiles')
+              .update({
+                ...updatedData,
+                'updated_at': DateTime.now().toIso8601String(),
+              })
+              .eq('id', user.id);
+          print('Profile table updated successfully');
+        } catch (e) {
+          // Profile table might not exist, that's okay
+          print('Profile table update failed (might not exist): $e');
+        }
+
+        return AuthResult(
+          success: true,
+          message: 'Profile updated successfully',
+          user: response.user,
+          data: response.user,
+        );
+      } else {
+        return AuthResult(
+          success: false,
+          message: 'Failed to update profile',
+        );
+      }
+    } catch (e) {
+      print('Error updating profile: $e');
+      return AuthResult(
+        success: false,
+        message: 'Failed to update profile: $e',
       );
     }
   }
@@ -629,11 +687,17 @@ class AuthService {
   }
 }
 
-/// Result class for authentication operations
+/// Result class for authentication operations (UPDATED WITH DATA FIELD)
 class AuthResult {
   final bool success;
   final String message;
   final User? user;
+  final dynamic data; // Added this field for generic data support
 
-  AuthResult({required this.success, required this.message, this.user});
+  AuthResult({
+    required this.success, 
+    required this.message, 
+    this.user,
+    this.data, // Added this parameter
+  });
 }

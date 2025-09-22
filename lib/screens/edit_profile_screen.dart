@@ -63,7 +63,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFF1A1A1A), // Dark background
       appBar: _buildAppBar(),
       body: _buildBody(),
     );
@@ -75,15 +75,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'Edit Profile',
         style: TextStyle(
           fontWeight: FontWeight.w600,
-          color: Color(0xFF1F2937),
+          color: Colors.white, // White text
         ),
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.black87, // Match navbar color
       elevation: 0,
-      shadowColor: Colors.black.withOpacity(0.1),
-      surfaceTintColor: Colors.white,
+      shadowColor: Colors.black.withOpacity(0.3),
+      surfaceTintColor: Colors.black87,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_rounded),
+        icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
         onPressed: _onBackPressed,
       ),
       actions: [
@@ -93,8 +93,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             child: TextButton(
               onPressed: _isLoading ? null : _saveChanges,
               style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF6366F1),
-                backgroundColor: const Color(0xFF6366F1).withOpacity(0.1),
+                foregroundColor: const Color(0xFFFF8A50), // Orange accent
+                backgroundColor: const Color(0xFFFF8A50).withOpacity(0.15),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -106,7 +106,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF8A50)),
                       ),
                     )
                   : const Text(
@@ -146,11 +146,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF2D2D2D), // Dark card background
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF404040)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -160,7 +161,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         children: [
           CircleAvatar(
             radius: 40,
-            backgroundColor: const Color(0xFF6366F1).withOpacity(0.1),
+            backgroundColor: const Color(0xFFFF8A50).withOpacity(0.15),
             backgroundImage: widget.userProfile.avatarUrl != null
                 ? NetworkImage(widget.userProfile.avatarUrl!)
                 : null,
@@ -172,7 +173,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     style: const TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF6366F1),
+                      color: Color(0xFFFF8A50), // Orange accent
                     ),
                   )
                 : null,
@@ -182,7 +183,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             widget.userProfile.email,
             style: const TextStyle(
               fontSize: 16,
-              color: Color(0xFF6B7280),
+              color: Color(0xFFB0B0B0), // Light grey for dark theme
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -195,11 +196,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF2D2D2D), // Dark card background
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF404040)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -215,7 +217,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF111827),
+                color: Colors.white, // White text
               ),
             ),
             const SizedBox(height: 24),
@@ -287,7 +289,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF374151),
+            color: Color(0xFFB0B0B0), // Light grey for labels
           ),
         ),
         const SizedBox(height: 8),
@@ -295,43 +297,47 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           controller: controller,
           keyboardType: keyboardType,
           validator: validator,
+          style: const TextStyle(
+            fontSize: 16,
+            color: Colors.white, // White text input
+          ),
           decoration: InputDecoration(
             prefixIcon: Icon(
               icon,
-              color: const Color(0xFF6B7280),
+              color: const Color(0xFF808080), // Grey icon
               size: 20,
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+              borderSide: const BorderSide(color: Color(0xFF404040)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+              borderSide: const BorderSide(color: Color(0xFF404040)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2),
+              borderSide: const BorderSide(color: Color(0xFFFF8A50), width: 2), // Orange focus
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFDC2626)),
+              borderSide: const BorderSide(color: Color(0xFFFF4444)),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFDC2626), width: 2),
+              borderSide: const BorderSide(color: Color(0xFFFF4444), width: 2),
             ),
             filled: true,
-            fillColor: const Color(0xFFF9FAFB),
+            fillColor: const Color(0xFF1A1A1A), // Slightly lighter dark background
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             hintStyle: const TextStyle(
-              color: Color(0xFF9CA3AF),
+              color: Color(0xFF808080),
               fontSize: 16,
             ),
-          ),
-          style: const TextStyle(
-            fontSize: 16,
-            color: Color(0xFF111827),
+            errorStyle: const TextStyle(
+              color: Color(0xFFFF4444),
+              fontSize: 12,
+            ),
           ),
         ),
       ],
@@ -345,10 +351,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       child: ElevatedButton(
         onPressed: (_hasChanges && !_isLoading) ? _saveChanges : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: _hasChanges ? const Color(0xFF6366F1) : const Color(0xFFE5E7EB),
-          foregroundColor: _hasChanges ? Colors.white : const Color(0xFF9CA3AF),
+          backgroundColor: _hasChanges ? const Color(0xFFFF8A50) : const Color(0xFF404040), // Orange or grey
+          foregroundColor: _hasChanges ? Colors.white : const Color(0xFF808080),
           elevation: _hasChanges ? 2 : 0,
-          shadowColor: const Color(0xFF6366F1).withOpacity(0.3),
+          shadowColor: const Color(0xFFFF8A50).withOpacity(0.3),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -381,7 +387,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   Icon(
                     Icons.save_rounded,
                     size: 20,
-                    color: _hasChanges ? Colors.white : const Color(0xFF9CA3AF),
+                    color: _hasChanges ? Colors.white : const Color(0xFF808080),
                   ),
                   const SizedBox(width: 8),
                   const Text(
@@ -425,7 +431,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text('Profile updated successfully!'),
-              backgroundColor: const Color(0xFF059669),
+              backgroundColor: const Color(0xFF4CAF50), // Green for success
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -443,7 +449,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(result.message),
-              backgroundColor: const Color(0xFFDC2626),
+              backgroundColor: const Color(0xFFFF4444), // Red for errors
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -459,7 +465,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to update profile: $e'),
-            backgroundColor: const Color(0xFFDC2626),
+            backgroundColor: const Color(0xFFFF4444),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -490,16 +496,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          backgroundColor: const Color(0xFF2D2D2D), // Dark dialog background
           title: const Text(
             'Unsaved Changes',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Color(0xFF111827),
+              color: Colors.white, // White text
             ),
           ),
           content: const Text(
             'You have unsaved changes. Are you sure you want to discard them?',
-            style: TextStyle(color: Color(0xFF6B7280)),
+            style: TextStyle(color: Color(0xFFB0B0B0)), // Light grey text
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -510,7 +517,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               child: const Text(
                 'Cancel',
                 style: TextStyle(
-                  color: Color(0xFF6B7280),
+                  color: Color(0xFFB0B0B0),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -518,7 +525,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFDC2626),
+                backgroundColor: const Color(0xFFFF4444), // Red for discard
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),

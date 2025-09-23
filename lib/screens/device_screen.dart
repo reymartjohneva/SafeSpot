@@ -25,6 +25,14 @@ class _DeviceScreenState extends State<DeviceScreen>
   late TabController _tabController;
   final MapController _mapController = MapController();
 
+  // Custom color scheme matching nav bar
+  static const Color primaryOrange = Color(0xFFFF8A50);
+  static const Color darkBackground = Colors.black87;
+  static const Color cardBackground = Color(0xFF1A1A1A);
+  static const Color surfaceColor = Color(0xFF2D2D2D);
+  static const Color textPrimary = Colors.white;
+  static const Color textSecondary = Color(0xFFB0B0B0);
+
   // Device controllers
   final _deviceIdController = TextEditingController();
   final _deviceNameController = TextEditingController();
@@ -145,21 +153,32 @@ class _DeviceScreenState extends State<DeviceScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Location Services Disabled'),
+        backgroundColor: cardBackground,
+        title: const Text(
+          'Location Services Disabled',
+          style: TextStyle(color: textPrimary),
+        ),
         content: const Text(
           'Please enable location services to display your location marker.',
+          style: TextStyle(color: textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: textSecondary),
+            ),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               Geolocator.openLocationSettings();
             },
-            child: const Text('Settings'),
+            child: const Text(
+              'Settings',
+              style: TextStyle(color: primaryOrange),
+            ),
           ),
         ],
       ),
@@ -199,7 +218,7 @@ class _DeviceScreenState extends State<DeviceScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to get location: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: Colors.red.shade700,
           ),
         );
       }
@@ -325,9 +344,9 @@ class _DeviceScreenState extends State<DeviceScreen>
             maxChildSize: 0.8,
             expand: false,
             builder: (context, scrollController) => Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: const BorderRadius.vertical(
+              decoration: const BoxDecoration(
+                color: cardBackground,
+                borderRadius: BorderRadius.vertical(
                   top: Radius.circular(20),
                 ),
               ),
@@ -339,7 +358,7 @@ class _DeviceScreenState extends State<DeviceScreen>
                     height: 4,
                     margin: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
+                      color: textSecondary.withOpacity(0.4),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -463,7 +482,7 @@ class _DeviceScreenState extends State<DeviceScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to load geofences: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: Colors.red.shade700,
           ),
         );
       }
@@ -490,7 +509,10 @@ class _DeviceScreenState extends State<DeviceScreen>
         _draggedPointIndex = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Geofence needs at least 3 points')),
+        const SnackBar(
+          content: Text('Geofence needs at least 3 points'),
+          backgroundColor: primaryOrange,
+        ),
       );
     }
   }
@@ -500,23 +522,39 @@ class _DeviceScreenState extends State<DeviceScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Create Geofence'),
+        backgroundColor: cardBackground,
+        title: const Text(
+          'Create Geofence',
+          style: TextStyle(color: textPrimary),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: _geofenceNameController,
+              style: const TextStyle(color: textPrimary),
               decoration: const InputDecoration(
                 labelText: 'Geofence Name',
+                labelStyle: TextStyle(color: textSecondary),
                 hintText: 'Enter a name for this geofence',
+                hintStyle: TextStyle(color: textSecondary),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: textSecondary),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: primaryOrange),
+                ),
               ),
             ),
             const SizedBox(height: 16),
-            Text('Points: ${_currentGeofencePoints.length}'),
+            Text(
+              'Points: ${_currentGeofencePoints.length}',
+              style: const TextStyle(color: textPrimary),
+            ),
             const SizedBox(height: 8),
             const Text(
               'Tip: You can drag points to adjust the geofence shape',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+              style: TextStyle(fontSize: 12, color: textSecondary),
             ),
           ],
         ),
@@ -531,7 +569,10 @@ class _DeviceScreenState extends State<DeviceScreen>
               });
               Navigator.pop(context);
             },
-            child: const Text('Cancel'),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: textSecondary),
+            ),
           ),
           TextButton(
             onPressed: _isSavingGeofence
@@ -547,7 +588,7 @@ class _DeviceScreenState extends State<DeviceScreen>
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(validationError),
-                          backgroundColor: Colors.red,
+                          backgroundColor: Colors.red.shade700,
                         ),
                       );
                       return;
@@ -560,9 +601,15 @@ class _DeviceScreenState extends State<DeviceScreen>
                 ? const SizedBox(
                     width: 16,
                     height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(primaryOrange),
+                    ),
                   )
-                : const Text('Create'),
+                : const Text(
+                    'Create',
+                    style: TextStyle(color: primaryOrange),
+                  ),
           ),
         ],
       ),
@@ -572,9 +619,9 @@ class _DeviceScreenState extends State<DeviceScreen>
   Future<void> _createGeofence(String name) async {
     if (!GeofenceService.isAuthenticated) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please log in to create geofences'),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text('Please log in to create geofences'),
+          backgroundColor: Colors.red.shade700,
         ),
       );
       return;
@@ -610,7 +657,10 @@ class _DeviceScreenState extends State<DeviceScreen>
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Geofence "$name" created successfully')),
+        SnackBar(
+          content: Text('Geofence "$name" created successfully'),
+          backgroundColor: primaryOrange,
+        ),
       );
     } catch (e) {
       setState(() {
@@ -620,7 +670,7 @@ class _DeviceScreenState extends State<DeviceScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to create geofence: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          backgroundColor: Colors.red.shade700,
         ),
       );
     }
@@ -640,7 +690,7 @@ class _DeviceScreenState extends State<DeviceScreen>
               'Point ${_draggedPointIndex! + 1} moved to new position',
             ),
             duration: const Duration(seconds: 2),
-            backgroundColor: Colors.blue,
+            backgroundColor: primaryOrange,
           ),
         );
 
@@ -657,7 +707,7 @@ class _DeviceScreenState extends State<DeviceScreen>
               'Point ${_currentGeofencePoints.length} added. Long press on any point to move it.',
             ),
             duration: const Duration(seconds: 2),
-            backgroundColor: Colors.green,
+            backgroundColor: Colors.green.shade700,
           ),
         );
       }
@@ -684,9 +734,10 @@ class _DeviceScreenState extends State<DeviceScreen>
               'Tap on map to move point ${closestPointIndex + 1} to new position.',
             ),
             duration: const Duration(seconds: 3),
-            backgroundColor: Colors.orange,
+            backgroundColor: Colors.orange.shade700,
             action: SnackBarAction(
               label: 'Cancel',
+              textColor: Colors.white,
               onPressed: () {
                 setState(() {
                   _isDragging = false;
@@ -718,7 +769,7 @@ class _DeviceScreenState extends State<DeviceScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to update geofence: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          backgroundColor: Colors.red.shade700,
         ),
       );
     }
@@ -733,13 +784,16 @@ class _DeviceScreenState extends State<DeviceScreen>
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Geofence deleted successfully')),
+        const SnackBar(
+          content: Text('Geofence deleted successfully'),
+          backgroundColor: primaryOrange,
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to delete geofence: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          backgroundColor: Colors.red.shade700,
         ),
       );
     }
@@ -747,10 +801,9 @@ class _DeviceScreenState extends State<DeviceScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
     if (!DeviceService.isAuthenticated) {
       return Scaffold(
+        backgroundColor: darkBackground,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -758,19 +811,24 @@ class _DeviceScreenState extends State<DeviceScreen>
               Icon(
                 Icons.lock_outline,
                 size: 80,
-                color: theme.colorScheme.outline,
+                color: textSecondary,
               ),
               const SizedBox(height: 24),
-              Text(
+              const Text(
                 'Authentication Required',
-                style: theme.textTheme.headlineSmall,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                  color: textPrimary,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              Text(
+              const Text(
                 'Please log in to manage devices',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: textSecondary,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -781,11 +839,11 @@ class _DeviceScreenState extends State<DeviceScreen>
     }
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: darkBackground,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: theme.colorScheme.surface,
-        surfaceTintColor: theme.colorScheme.surface,
+        backgroundColor: darkBackground,
+        surfaceTintColor: darkBackground,
         title: Row(
           children: [
             // App Logo
@@ -797,33 +855,34 @@ class _DeviceScreenState extends State<DeviceScreen>
             ),
             const SizedBox(width: 12),
             // App Name
-            Text(
+            const Text(
               'SafeSpot',
-              style: theme.textTheme.headlineSmall?.copyWith(
+              style: TextStyle(
+                fontSize: 24,
                 fontWeight: FontWeight.w600,
+                color: textPrimary,
               ),
             ),
           ],
         ),
-        actions: [],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+              color: surfaceColor,
               borderRadius: BorderRadius.circular(24),
             ),
             child: TabBar(
               controller: _tabController,
               indicator: BoxDecoration(
-                color: theme.colorScheme.primary,
+                color: primaryOrange,
                 borderRadius: BorderRadius.circular(24),
               ),
               indicatorSize: TabBarIndicatorSize.tab,
               dividerColor: Colors.transparent,
               labelColor: Colors.white,
-              unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+              unselectedLabelColor: textSecondary,
               tabs: const [
                 Tab(text: 'Devices', icon: Icon(Icons.devices)),
                 Tab(text: 'Map View', icon: Icon(Icons.map)),
@@ -843,8 +902,6 @@ class _DeviceScreenState extends State<DeviceScreen>
   }
 
   Widget _buildDevicesTab() {
-    final theme = Theme.of(context);
-    
     return Column(
       children: [
         // Stats widget with full width
@@ -867,8 +924,10 @@ class _DeviceScreenState extends State<DeviceScreen>
             label: const Text('Add Device'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
-              backgroundColor: theme.colorScheme.primary,
+              backgroundColor: primaryOrange,
               foregroundColor: Colors.white,
+              elevation: 8,
+              shadowColor: primaryOrange.withOpacity(0.3),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -882,8 +941,14 @@ class _DeviceScreenState extends State<DeviceScreen>
         Expanded(
           child: RefreshIndicator(
             onRefresh: _loadDevices,
+            color: primaryOrange,
+            backgroundColor: cardBackground,
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(primaryOrange),
+                    ),
+                  )
                 : _devices.isEmpty
                     ? _buildEmptyState()
                     : DeviceListWidget(
@@ -948,7 +1013,6 @@ class _DeviceScreenState extends State<DeviceScreen>
   }
 
   Widget _buildEmptyState() {
-    final theme = Theme.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -956,28 +1020,38 @@ class _DeviceScreenState extends State<DeviceScreen>
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+              color: surfaceColor,
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
-            child: Icon(
+            child: const Icon(
               Icons.devices_outlined,
               size: 64,
-              color: theme.colorScheme.onSurfaceVariant,
+              color: textSecondary,
             ),
           ),
           const SizedBox(height: 24),
-          Text(
+          const Text(
             'No devices added yet',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: textPrimary,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Add your first device to start tracking its location',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+            style: TextStyle(
+              fontSize: 16,
+              color: textSecondary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -988,8 +1062,13 @@ class _DeviceScreenState extends State<DeviceScreen>
             label: const Text('Add Device'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              backgroundColor: theme.colorScheme.primary,
+              backgroundColor: primaryOrange,
               foregroundColor: Colors.white,
+              elevation: 8,
+              shadowColor: primaryOrange.withOpacity(0.3),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
         ],

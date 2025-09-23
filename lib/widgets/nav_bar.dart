@@ -20,10 +20,7 @@ class ModernNavBar extends StatelessWidget {
           height: 80,
           decoration: BoxDecoration(
             color: Colors.black87,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(24),
-              topRight: Radius.circular(24),
-            ),
+            
           ),
           child: CustomPaint(
             painter: NavBarPainter(

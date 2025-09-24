@@ -61,7 +61,7 @@ class ProfileInfoCard extends StatelessWidget {
             title,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey.shade600,
+              color: const Color.fromARGB(255, 255, 255, 255),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -71,7 +71,7 @@ class ProfileInfoCard extends StatelessWidget {
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF111827),
+              color: Color.fromARGB(255, 255, 255, 255),
             ),
           ),
         ],

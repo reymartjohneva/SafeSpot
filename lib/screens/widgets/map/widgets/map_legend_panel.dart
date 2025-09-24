@@ -28,7 +28,7 @@ class _MapLegendPanelState extends State<MapLegendPanel>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 250),
       vsync: this,
     );
     _expandAnimation = CurvedAnimation(
@@ -57,54 +57,44 @@ class _MapLegendPanelState extends State<MapLegendPanel>
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      bottom: 16,
-      left: 16,
+      bottom: 12,
+      left: 12,
       child: GestureDetector(
         onTap: _toggleExpanded,
-        child: Card(
-          elevation: 8,
-          shadowColor: Colors.black26,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: widget.constraints.maxWidth > 300 ? 200 : widget.constraints.maxWidth - 100,
           ),
-          child: Container(
-            constraints: BoxConstraints(
-              maxWidth: widget.constraints.maxWidth > 400 ? 280 : widget.constraints.maxWidth - 120,
-            ),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.white,
-                  Colors.grey.shade50,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.95),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade300, width: 0.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
               ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Colors.grey.shade200,
-                width: 1,
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildLegendHeader(context),
-                  SizeTransition(
-                    sizeFactor: _expandAnimation,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 16),
-                        ..._buildLegendItems(context),
-                      ],
-                    ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildCompactHeader(context),
+                SizeTransition(
+                  sizeFactor: _expandAnimation,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 10),
+                      ..._buildCompactLegendItems(context),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -112,37 +102,39 @@ class _MapLegendPanelState extends State<MapLegendPanel>
     );
   }
 
-  Widget _buildLegendHeader(BuildContext context) {
+  Widget _buildCompactHeader(BuildContext context) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.all(6),
+          width: 20,
+          height: 20,
           decoration: BoxDecoration(
             color: Colors.orange.shade50,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(6),
           ),
           child: Icon(
             Icons.map_outlined,
-            size: 16,
+            size: 12,
             color: Colors.orange.shade600,
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            'Map Legend',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
-            ),
+        const SizedBox(width: 8),
+        Text(
+          'Legend',
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade700,
+            fontSize: 12,
           ),
         ),
+        const SizedBox(width: 4),
         AnimatedRotation(
           turns: _isExpanded ? 0.5 : 0,
-          duration: const Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 250),
           child: Icon(
             Icons.expand_more,
-            size: 20,
+            size: 16,
             color: Colors.grey.shade600,
           ),
         ),
@@ -150,18 +142,18 @@ class _MapLegendPanelState extends State<MapLegendPanel>
     );
   }
 
-  List<Widget> _buildLegendItems(BuildContext context) {
+  List<Widget> _buildCompactLegendItems(BuildContext context) {
     List<Widget> items = [
-      _buildLegendItem(
+      _buildCompactLegendItem(
         Icons.radio_button_unchecked,
-        'Historical points',
+        'History',
         Colors.blue.shade400,
         context,
       ),
-      const SizedBox(height: 12),
-      _buildLegendItem(
+      const SizedBox(height: 8),
+      _buildCompactLegendItem(
         Icons.smartphone,
-        'Device location',
+        'Device',
         Colors.green.shade500,
         context,
       ),
@@ -169,10 +161,10 @@ class _MapLegendPanelState extends State<MapLegendPanel>
 
     if (widget.currentPosition != null) {
       items.addAll([
-        const SizedBox(height: 12),
-        _buildLegendItem(
+        const SizedBox(height: 8),
+        _buildCompactLegendItem(
           Icons.my_location,
-          'Your location',
+          'You',
           Colors.blue.shade600,
           context,
         ),
@@ -181,8 +173,8 @@ class _MapLegendPanelState extends State<MapLegendPanel>
 
     if (widget.geofences.isNotEmpty) {
       items.addAll([
-        const SizedBox(height: 12),
-        _buildLegendItem(
+        const SizedBox(height: 8),
+        _buildCompactLegendItem(
           Icons.layers_outlined,
           'Geofences',
           Colors.orange.shade500,
@@ -192,64 +184,68 @@ class _MapLegendPanelState extends State<MapLegendPanel>
     }
 
     items.addAll([
-      const SizedBox(height: 12),
-      _buildMovementPathLegend(context),
+      const SizedBox(height: 8),
+      _buildCompactPathLegend(context),
     ]);
 
     return items;
   }
 
-  Widget _buildLegendItem(IconData icon, String label, Color color, BuildContext context) {
+  Widget _buildCompactLegendItem(IconData icon, String label, Color color, BuildContext context) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 24,
-          height: 24,
+          width: 16,
+          height: 16,
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(4),
             border: Border.all(
               color: color.withOpacity(0.3),
-              width: 1,
+              width: 0.5,
             ),
           ),
           child: Icon(
             icon,
-            size: 14,
+            size: 10,
             color: color,
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Colors.grey.shade700,
             fontWeight: FontWeight.w500,
+            fontSize: 11,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildMovementPathLegend(BuildContext context) {
+  Widget _buildCompactPathLegend(BuildContext context) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 24,
-          height: 3,
+          width: 16,
+          height: 2,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [Colors.blue.shade400, Colors.blue.shade600],
             ),
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(1),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         Text(
-          'Movement path',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          'Path',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Colors.grey.shade700,
             fontWeight: FontWeight.w500,
+            fontSize: 11,
           ),
         ),
       ],

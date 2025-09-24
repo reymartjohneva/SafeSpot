@@ -21,12 +21,21 @@ class DeviceMapWidget extends StatelessWidget {
   final bool isDrawingGeofence;
   final bool isDragging;
   final int? draggedPointIndex;
+  final bool isLoadingGeofences;
   final Function(String?) onDeviceSelected;
   final Function(String) onCenterMapOnDevice;
   final VoidCallback onCenterMapOnCurrentLocation;
   final Function(TapPosition, LatLng) onMapTap;
   final Function(TapPosition, LatLng) onMapLongPress;
   final Device? Function(String) findDeviceById;
+  
+  // Added geofence control callbacks
+  final VoidCallback onStartDrawing;
+  final VoidCallback onStopDrawing;
+  final VoidCallback onClearPoints;
+  final VoidCallback onLoadGeofences;
+  final Future<void> Function(String, bool) onToggleGeofenceStatus;
+  final Future<void> Function(String, int) onDeleteGeofence;
 
   const DeviceMapWidget({
     Key? key,
@@ -40,12 +49,19 @@ class DeviceMapWidget extends StatelessWidget {
     this.isDrawingGeofence = false,
     this.isDragging = false,
     this.draggedPointIndex,
+    this.isLoadingGeofences = false,
     required this.onDeviceSelected,
     required this.onCenterMapOnDevice,
     required this.onCenterMapOnCurrentLocation,
     required this.onMapTap,
     required this.onMapLongPress,
     required this.findDeviceById,
+    required this.onStartDrawing,
+    required this.onStopDrawing,
+    required this.onClearPoints,
+    required this.onLoadGeofences,
+    required this.onToggleGeofenceStatus,
+    required this.onDeleteGeofence,
   }) : super(key: key);
 
   @override
@@ -54,6 +70,9 @@ class DeviceMapWidget extends StatelessWidget {
       builder: (context, constraints) {
         return Stack(
           children: [
+            // Drawing instructions overlay
+            if (isDrawingGeofence) _buildDrawingInstructions(context),
+            
             // Main Map with Layers
             FlutterMap(
               mapController: mapController,
@@ -116,18 +135,97 @@ class DeviceMapWidget extends StatelessWidget {
               constraints: constraints,
             ),
 
-            // Right Side Map Controls Panel
+            // Combined Map Controls Panel (includes geofence controls)
             MapControlsPanel(
               mapController: mapController,
               currentPosition: currentPosition,
               onCenterMapOnCurrentLocation: onCenterMapOnCurrentLocation,
               onFitMapToBounds: () => _fitMapToBounds(),
+              isDrawingGeofence: isDrawingGeofence,
+              isDragging: isDragging,
+              draggedPointIndex: draggedPointIndex,
+              currentGeofencePoints: currentGeofencePoints,
+              geofences: geofences,
+              isLoadingGeofences: isLoadingGeofences,
+              onStartDrawing: onStartDrawing,
+              onStopDrawing: onStopDrawing,
+              onClearPoints: onClearPoints,
+              onLoadGeofences: onLoadGeofences,
+              onToggleGeofenceStatus: onToggleGeofenceStatus,
+              onDeleteGeofence: onDeleteGeofence,
             ),
           ],
         );
       },
     );
   }
+
+  Widget _buildDrawingInstructions(BuildContext context) {
+  return Positioned(
+    top: 70, // Just below the compact device selector
+    left: 12,
+    right: 60, // Leave space for controls
+    child: Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: isDragging 
+            ? Colors.orange.shade100.withOpacity(0.95) 
+            : Colors.orange.shade50.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Colors.orange.shade300.withOpacity(0.5),
+          width: 0.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isDragging ? Icons.touch_app : Icons.info_outline,
+                color: Colors.orange.shade700,
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  isDragging
+                      ? 'Moving point ${draggedPointIndex! + 1}. Tap to place it.'
+                      : 'Tap to add • Long press to move points',
+                  style: TextStyle(
+                    color: Colors.orange.shade700,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (currentGeofencePoints.isNotEmpty && !isDragging)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                '${currentGeofencePoints.length} points • ${currentGeofencePoints.length >= 3 ? "Ready!" : "Need ${3 - currentGeofencePoints.length} more"}',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.orange.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
+}
 
   void _fitMapToBounds() {
     final allPoints = <LatLng>[];

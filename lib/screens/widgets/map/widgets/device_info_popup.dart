@@ -24,63 +24,59 @@ class DeviceInfoPopup extends StatelessWidget {
       markers: [
         Marker(
           point: LatLng(latestLocation.latitude, latestLocation.longitude),
-          width: constraints.maxWidth > 300 ? 240 : constraints.maxWidth - 80,
-          height: 160,
-          builder: (context) => _buildPopupCard(context),
+          width: constraints.maxWidth > 300 ? 180 : constraints.maxWidth - 60,
+          height: 120,
+          builder: (context) => _buildCompactPopup(context),
         ),
       ],
     );
   }
 
-  Widget _buildPopupCard(BuildContext context) {
+  Widget _buildCompactPopup(BuildContext context) {
     return Transform.translate(
-      offset: const Offset(0, -140),
-      child: Card(
-        elevation: 12,
-        shadowColor: Colors.black38,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+      offset: const Offset(0, -110),
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: constraints.maxWidth - 60,
+          maxHeight: 120,
         ),
-        child: Container(
-          constraints: BoxConstraints(maxWidth: constraints.maxWidth - 80),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.white,
-                Colors.grey.shade50,
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: DeviceUtils.getDeviceColor(device.deviceId).withOpacity(0.3),
-              width: 2,
-            ),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.96),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: DeviceUtils.getDeviceColor(device.deviceId).withOpacity(0.2),
+            width: 1,
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildDeviceHeader(context),
-                const SizedBox(height: 16),
-                ..._buildDeviceInfoItems(context),
-              ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildCompactHeader(context),
+              const SizedBox(height: 8),
+              ..._buildCompactInfoItems(context),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildDeviceHeader(BuildContext context) {
+  Widget _buildCompactHeader(BuildContext context) {
     return Row(
       children: [
         Container(
-          width: 32,
-          height: 32,
+          width: 24,
+          height: 24,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -88,38 +84,33 @@ class DeviceInfoPopup extends StatelessWidget {
                 DeviceUtils.getDeviceColor(device.deviceId).withOpacity(0.7),
               ],
             ),
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: [
-              BoxShadow(
-                color: DeviceUtils.getDeviceColor(device.deviceId).withOpacity(0.3),
-                blurRadius: 6,
-                offset: const Offset(0, 3),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(8),
           ),
           child: const Icon(
             Icons.smartphone,
-            size: 18,
+            size: 14,
             color: Colors.white,
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 device.deviceName,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
                   color: Colors.grey.shade800,
+                  fontSize: 13,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
               Text(
-                'Device Information',
+                'Device Info',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Colors.grey.shade600,
+                  fontSize: 10,
                 ),
               ),
             ],
@@ -129,50 +120,48 @@ class DeviceInfoPopup extends StatelessWidget {
     );
   }
 
-  List<Widget> _buildDeviceInfoItems(BuildContext context) {
+  List<Widget> _buildCompactInfoItems(BuildContext context) {
     List<Widget> items = [
-      _buildInfoRow(
+      _buildCompactInfoRow(
         Icons.access_time_filled,
-        'Last seen',
         DeviceUtils.formatDateSmart(latestLocation.createdAt),
         context,
       ),
-      const SizedBox(height: 8),
-      if (latestLocation.speed != null)
-        Column(
-          children: [
-            _buildInfoRow(
-              Icons.speed,
-              'Speed',
-              DeviceUtils.formatSpeed(latestLocation.speed!),
-              context,
-              valueColor: DeviceUtils.getSpeedColor(latestLocation.speed),
-            ),
-            const SizedBox(height: 8),
-          ],
+      const SizedBox(height: 4),
+    ];
+
+    if (latestLocation.speed != null) {
+      items.addAll([
+        _buildCompactInfoRow(
+          Icons.speed,
+          DeviceUtils.formatSpeed(latestLocation.speed!),
+          context,
+          valueColor: DeviceUtils.getSpeedColor(latestLocation.speed),
         ),
-      _buildInfoRow(
+        const SizedBox(height: 4),
+      ]);
+    }
+
+    items.addAll([
+      _buildCompactInfoRow(
         Icons.timeline,
-        'History',
-        '$locationCount points',
+        '$locationCount pts',
         context,
       ),
-      const SizedBox(height: 8),
-      _buildInfoRow(
+      const SizedBox(height: 4),
+      _buildCompactInfoRow(
         Icons.radio_button_checked,
-        'Status',
         device.isActive ? 'Active' : 'Inactive',
         context,
         valueColor: device.isActive ? Colors.green.shade600 : Colors.orange.shade600,
       ),
-    ];
+    ]);
 
     return items;
   }
 
-  Widget _buildInfoRow(
+  Widget _buildCompactInfoRow(
     IconData icon,
-    String label,
     String value,
     BuildContext context, {
     Color? valueColor,
@@ -181,38 +170,34 @@ class DeviceInfoPopup extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 24,
-          height: 24,
+          width: 16,
+          height: 16,
           decoration: BoxDecoration(
             color: (valueColor ?? theme.colorScheme.primary).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(4),
           ),
           child: Icon(
             icon,
-            size: 14,
+            size: 10,
             color: valueColor ?? theme.colorScheme.primary,
           ),
         ),
-        const SizedBox(width: 12),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const Spacer(),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          decoration: BoxDecoration(
-            color: (valueColor ?? theme.colorScheme.onSurface).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            value,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: valueColor ?? theme.colorScheme.onSurface,
+        const SizedBox(width: 8),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: (valueColor ?? theme.colorScheme.onSurface).withOpacity(0.08),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              value,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: valueColor ?? theme.colorScheme.onSurface,
+                fontSize: 10,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ),

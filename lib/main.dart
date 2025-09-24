@@ -7,6 +7,7 @@ import 'services/auth_service.dart';
 import 'screens/profile_screen.dart';
 import 'widgets/nav_bar.dart';
 import 'screens/notifications_screen.dart';
+import 'screens/emergency_hotlines_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -202,8 +203,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
           // Home - Device Screen
           const DeviceScreen(),
           
-          // Information Screen
-          _buildInformationScreen(),
+          // Information Screen - Emergency Hotlines
+          const EmergencyHotlinesScreen(),
           
           // Notifications Screen
           const NotificationsScreen(),
@@ -215,113 +216,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
       bottomNavigationBar: ModernNavBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-      ),
-    );
-  }
-
-  Widget _buildInformationScreen() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 60),
-          Text(
-            'Information',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Expanded(
-            child: ListView(
-              children: [
-                _buildInfoCard(
-                  icon: Icons.help_outline,
-                  title: 'How SafeSpot Works',
-                  subtitle: 'Learn about device tracking and geofencing',
-                  onTap: () {},
-                ),
-                const SizedBox(height: 12),
-                _buildInfoCard(
-                  icon: Icons.security,
-                  title: 'Privacy & Security',
-                  subtitle: 'Your data protection and privacy settings',
-                  onTap: () {},
-                ),
-                const SizedBox(height: 12),
-                _buildInfoCard(
-                  icon: Icons.location_on_outlined,
-                  title: 'Location Permissions',
-                  subtitle: 'Manage location access and permissions',
-                  onTap: () {},
-                ),
-                const SizedBox(height: 12),
-                _buildInfoCard(
-                  icon: Icons.support_agent,
-                  title: 'Support & FAQ',
-                  subtitle: 'Get help and find answers',
-                  onTap: () {},
-                ),
-                const SizedBox(height: 12),
-                _buildInfoCard(
-                  icon: Icons.info_outline,
-                  title: 'About SafeSpot',
-                  subtitle: 'Version info and app details',
-                  onTap: () {},
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            icon,
-            color: Theme.of(context).colorScheme.primary,
-            size: 24,
-          ),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Text(
-            subtitle,
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: 14,
-            ),
-          ),
-        ),
-        trailing: Icon(
-          Icons.arrow_forward_ios,
-          color: Colors.grey.shade400,
-          size: 16,
-        ),
-        onTap: onTap,
       ),
     );
   }

@@ -4,7 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:safe_spot/services/device_service.dart';
 import 'package:safe_spot/services/geofence_service.dart';
-import 'widgets/map_controls_panel.dart'; // Updated import
+import 'widgets/map_controls_panel.dart';
 import 'widgets/device_info_popup.dart';
 import 'widgets/map_legend_panel.dart';
 import 'widgets/device_selector_panel.dart';
@@ -161,67 +161,71 @@ class DeviceMapWidget extends StatelessWidget {
   }
 
   Widget _buildDrawingInstructions(BuildContext context) {
-    return Positioned(
-      top: 80, // Adjusted to not overlap with device selector
-      left: 16,
-      right: 80, // Leave space for map controls
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDragging ? Colors.orange.shade200 : Colors.orange.shade100,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.orange.shade300,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+  return Positioned(
+    top: 70, // Just below the compact device selector
+    left: 12,
+    right: 60, // Leave space for controls
+    child: Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: isDragging 
+            ? Colors.orange.shade100.withOpacity(0.95) 
+            : Colors.orange.shade50.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Colors.orange.shade300.withOpacity(0.5),
+          width: 0.5,
         ),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Icon(
-                  isDragging ? Icons.touch_app : Icons.info,
-                  color: Colors.orange.shade800,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    isDragging
-                        ? 'Moving point ${draggedPointIndex! + 1}. Tap anywhere on map to place it.'
-                        : 'Tap to add points • Long press near a point to move it',
-                    style: TextStyle(
-                      color: Colors.orange.shade800,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (currentGeofencePoints.isNotEmpty && !isDragging)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isDragging ? Icons.touch_app : Icons.info_outline,
+                color: Colors.orange.shade700,
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
                 child: Text(
-                  '${currentGeofencePoints.length} points added • ${currentGeofencePoints.length >= 3 ? "Ready to create!" : "Need ${3 - currentGeofencePoints.length} more point(s)"}',
+                  isDragging
+                      ? 'Moving point ${draggedPointIndex! + 1}. Tap to place it.'
+                      : 'Tap to add • Long press to move points',
                   style: TextStyle(
-                    fontSize: 11,
                     color: Colors.orange.shade700,
                     fontWeight: FontWeight.w500,
+                    fontSize: 11,
                   ),
                 ),
               ),
-          ],
-        ),
+            ],
+          ),
+          if (currentGeofencePoints.isNotEmpty && !isDragging)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                '${currentGeofencePoints.length} points • ${currentGeofencePoints.length >= 3 ? "Ready!" : "Need ${3 - currentGeofencePoints.length} more"}',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.orange.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _fitMapToBounds() {
     final allPoints = <LatLng>[];

@@ -21,102 +21,93 @@ class DeviceSelectorPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      top: 16,
-      left: 16,
-      right: 16,
-      child: Card(
-        elevation: 8,
-        shadowColor: Colors.black26,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+      top: 12,
+      left: 12,
+      right: 80, // Leave space for map controls
+      child: Container(
+        height: 48,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.95),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300, width: 0.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.white,
-                Colors.grey.shade50,
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.grey.shade200,
-              width: 1,
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.tune,
-                    color: Colors.blue.shade600,
-                    size: 20,
-                  ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Device Filter',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      _buildDeviceDropdown(context),
-                    ],
-                  ),
+                child: Icon(
+                  Icons.tune,
+                  color: Colors.blue.shade600,
+                  size: 14,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildCompactDropdown(context),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildDeviceDropdown(BuildContext context) {
+  Widget _buildCompactDropdown(BuildContext context) {
     return DropdownButtonHideUnderline(
       child: DropdownButton<String>(
         value: selectedDeviceId,
         hint: Text(
-          'Select device to view',
-          style: TextStyle(color: Colors.grey.shade600),
+          'Filter devices',
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
         ),
         isExpanded: true,
-        icon: Icon(Icons.expand_more, color: Colors.grey.shade600),
+        icon: Icon(
+          Icons.expand_more,
+          color: Colors.grey.shade600,
+          size: 16,
+        ),
+        style: TextStyle(
+          color: Colors.grey.shade800,
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
         items: [
           DropdownMenuItem<String>(
             value: null,
             child: Row(
               children: [
                 Container(
-                  width: 20,
-                  height: 20,
+                  width: 14,
+                  height: 14,
                   decoration: BoxDecoration(
                     color: Colors.green.shade100,
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(4),
                   ),
                   child: Icon(
                     Icons.visibility,
-                    size: 14,
+                    size: 10,
                     color: Colors.green.shade600,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 const Text('Show all devices'),
               ],
             ),
@@ -124,7 +115,7 @@ class DeviceSelectorPanel extends StatelessWidget {
           ...devices.map(
             (device) => DropdownMenuItem<String>(
               value: device.deviceId,
-              child: _buildDeviceDropdownItem(device),
+              child: _buildCompactDeviceItem(device),
             ),
           ),
         ],
@@ -138,30 +129,23 @@ class DeviceSelectorPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildDeviceDropdownItem(Device device) {
+  Widget _buildCompactDeviceItem(Device device) {
     return Row(
       children: [
         Container(
-          width: 20,
-          height: 20,
+          width: 14,
+          height: 14,
           decoration: BoxDecoration(
             color: DeviceUtils.getDeviceColor(device.deviceId),
-            borderRadius: BorderRadius.circular(6),
-            boxShadow: [
-              BoxShadow(
-                color: DeviceUtils.getDeviceColor(device.deviceId).withOpacity(0.3),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(4),
           ),
           child: const Icon(
             Icons.smartphone,
-            size: 12,
+            size: 8,
             color: Colors.white,
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
             device.deviceName,
@@ -170,20 +154,20 @@ class DeviceSelectorPanel extends StatelessWidget {
           ),
         ),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
             color: Colors.blue.shade50,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: Colors.blue.shade200,
-              width: 1,
+              width: 0.5,
             ),
           ),
           child: Text(
             '${deviceLocations[device.deviceId]?.length ?? 0}',
             style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
               color: Colors.blue.shade700,
             ),
           ),

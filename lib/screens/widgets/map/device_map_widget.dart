@@ -4,7 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:safe_spot/services/device_service.dart';
 import 'package:safe_spot/services/geofence_service.dart';
-import 'widgets/map_controls_panel.dart';
+import 'widgets/map_controls_panel.dart'; // Updated import
 import 'widgets/device_info_popup.dart';
 import 'widgets/map_legend_panel.dart';
 import 'widgets/device_selector_panel.dart';
@@ -21,12 +21,21 @@ class DeviceMapWidget extends StatelessWidget {
   final bool isDrawingGeofence;
   final bool isDragging;
   final int? draggedPointIndex;
+  final bool isLoadingGeofences;
   final Function(String?) onDeviceSelected;
   final Function(String) onCenterMapOnDevice;
   final VoidCallback onCenterMapOnCurrentLocation;
   final Function(TapPosition, LatLng) onMapTap;
   final Function(TapPosition, LatLng) onMapLongPress;
   final Device? Function(String) findDeviceById;
+  
+  // Added geofence control callbacks
+  final VoidCallback onStartDrawing;
+  final VoidCallback onStopDrawing;
+  final VoidCallback onClearPoints;
+  final VoidCallback onLoadGeofences;
+  final Future<void> Function(String, bool) onToggleGeofenceStatus;
+  final Future<void> Function(String, int) onDeleteGeofence;
 
   const DeviceMapWidget({
     Key? key,
@@ -40,12 +49,19 @@ class DeviceMapWidget extends StatelessWidget {
     this.isDrawingGeofence = false,
     this.isDragging = false,
     this.draggedPointIndex,
+    this.isLoadingGeofences = false,
     required this.onDeviceSelected,
     required this.onCenterMapOnDevice,
     required this.onCenterMapOnCurrentLocation,
     required this.onMapTap,
     required this.onMapLongPress,
     required this.findDeviceById,
+    required this.onStartDrawing,
+    required this.onStopDrawing,
+    required this.onClearPoints,
+    required this.onLoadGeofences,
+    required this.onToggleGeofenceStatus,
+    required this.onDeleteGeofence,
   }) : super(key: key);
 
   @override
@@ -54,6 +70,9 @@ class DeviceMapWidget extends StatelessWidget {
       builder: (context, constraints) {
         return Stack(
           children: [
+            // Drawing instructions overlay
+            if (isDrawingGeofence) _buildDrawingInstructions(context),
+            
             // Main Map with Layers
             FlutterMap(
               mapController: mapController,
@@ -116,16 +135,91 @@ class DeviceMapWidget extends StatelessWidget {
               constraints: constraints,
             ),
 
-            // Right Side Map Controls Panel
+            // Combined Map Controls Panel (includes geofence controls)
             MapControlsPanel(
               mapController: mapController,
               currentPosition: currentPosition,
               onCenterMapOnCurrentLocation: onCenterMapOnCurrentLocation,
               onFitMapToBounds: () => _fitMapToBounds(),
+              isDrawingGeofence: isDrawingGeofence,
+              isDragging: isDragging,
+              draggedPointIndex: draggedPointIndex,
+              currentGeofencePoints: currentGeofencePoints,
+              geofences: geofences,
+              isLoadingGeofences: isLoadingGeofences,
+              onStartDrawing: onStartDrawing,
+              onStopDrawing: onStopDrawing,
+              onClearPoints: onClearPoints,
+              onLoadGeofences: onLoadGeofences,
+              onToggleGeofenceStatus: onToggleGeofenceStatus,
+              onDeleteGeofence: onDeleteGeofence,
             ),
           ],
         );
       },
+    );
+  }
+
+  Widget _buildDrawingInstructions(BuildContext context) {
+    return Positioned(
+      top: 80, // Adjusted to not overlap with device selector
+      left: 16,
+      right: 80, // Leave space for map controls
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDragging ? Colors.orange.shade200 : Colors.orange.shade100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.orange.shade300,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Icon(
+                  isDragging ? Icons.touch_app : Icons.info,
+                  color: Colors.orange.shade800,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    isDragging
+                        ? 'Moving point ${draggedPointIndex! + 1}. Tap anywhere on map to place it.'
+                        : 'Tap to add points • Long press near a point to move it',
+                    style: TextStyle(
+                      color: Colors.orange.shade800,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (currentGeofencePoints.isNotEmpty && !isDragging)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  '${currentGeofencePoints.length} points added • ${currentGeofencePoints.length >= 3 ? "Ready to create!" : "Need ${3 - currentGeofencePoints.length} more point(s)"}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.orange.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 

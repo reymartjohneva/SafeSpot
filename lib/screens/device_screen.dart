@@ -10,7 +10,6 @@ import 'package:safe_spot/screens/widgets/device_list_widget.dart';
 import 'package:safe_spot/screens/widgets/map/device_map_widget.dart';
 import 'package:safe_spot/screens/widgets/device_stats_widget.dart';
 import 'package:safe_spot/screens/widgets/add_device_form_widget.dart';
-import 'package:safe_spot/screens/widgets/device_geofence_overlay.dart';
 import 'package:safe_spot/utils/device_utils.dart';
 
 class DeviceScreen extends StatefulWidget {
@@ -964,51 +963,41 @@ class _DeviceScreenState extends State<DeviceScreen>
   }
 
   Widget _buildMapTab() {
-    return Stack(
-      children: [
-        DeviceMapWidget(
-          mapController: _mapController,
-          devices: _devices,
-          deviceLocations: _deviceLocations,
-          selectedDeviceId: _selectedDeviceId,
-          currentPosition: _currentPosition,
-          geofences: _geofences,
-          currentGeofencePoints: _currentGeofencePoints,
-          isDrawingGeofence: _isDrawingGeofence,
-          isDragging: _isDragging,
-          draggedPointIndex: _draggedPointIndex,
-          onDeviceSelected: (deviceId) {
-            setState(() {
-              _selectedDeviceId = deviceId;
-            });
-          },
-          onCenterMapOnDevice: _centerMapOnDevice,
-          onCenterMapOnCurrentLocation: _centerMapOnCurrentLocation,
-          onMapTap: _onMapTap,
-          onMapLongPress: _onMapLongPress,
-          findDeviceById: _findDeviceById,
-        ),
-        DeviceGeofenceOverlay(
-          isDrawingGeofence: _isDrawingGeofence,
-          isDragging: _isDragging,
-          draggedPointIndex: _draggedPointIndex,
-          currentGeofencePoints: _currentGeofencePoints,
-          geofences: _geofences,
-          isLoadingGeofences: _isLoadingGeofences,
-          onStartDrawing: _startDrawingGeofence,
-          onStopDrawing: _stopDrawingGeofence,
-          onClearPoints: () {
-            setState(() {
-              _currentGeofencePoints.clear();
-              _isDragging = false;
-              _draggedPointIndex = null;
-            });
-          },
-          onLoadGeofences: _loadGeofences,
-          onToggleGeofenceStatus: _toggleGeofenceStatus,
-          onDeleteGeofence: _deleteGeofence,
-        ),
-      ],
+    return DeviceMapWidget(
+      mapController: _mapController,
+      devices: _devices,
+      deviceLocations: _deviceLocations,
+      selectedDeviceId: _selectedDeviceId,
+      currentPosition: _currentPosition,
+      geofences: _geofences,
+      currentGeofencePoints: _currentGeofencePoints,
+      isDrawingGeofence: _isDrawingGeofence,
+      isDragging: _isDragging,
+      draggedPointIndex: _draggedPointIndex,
+      isLoadingGeofences: _isLoadingGeofences,
+      onDeviceSelected: (deviceId) {
+        setState(() {
+          _selectedDeviceId = deviceId;
+        });
+      },
+      onCenterMapOnDevice: _centerMapOnDevice,
+      onCenterMapOnCurrentLocation: _centerMapOnCurrentLocation,
+      onMapTap: _onMapTap,
+      onMapLongPress: _onMapLongPress,
+      findDeviceById: _findDeviceById,
+      // Geofence control callbacks
+      onStartDrawing: _startDrawingGeofence,
+      onStopDrawing: _stopDrawingGeofence,
+      onClearPoints: () {
+        setState(() {
+          _currentGeofencePoints.clear();
+          _isDragging = false;
+          _draggedPointIndex = null;
+        });
+      },
+      onLoadGeofences: _loadGeofences,
+      onToggleGeofenceStatus: _toggleGeofenceStatus,
+      onDeleteGeofence: _deleteGeofence,
     );
   }
 

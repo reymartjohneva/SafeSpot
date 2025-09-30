@@ -7,6 +7,7 @@ import 'services/auth_service.dart';
 import 'screens/profile_screen.dart';
 import 'widgets/nav_bar.dart';
 import 'screens/emergency_hotlines_screen.dart';
+import 'screens/notification_screen.dart'; // Add this import
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -154,7 +155,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
   final List<Widget> _screens = [
     const DeviceScreen(),              // Index 0 - Home
     const EmergencyHotlinesScreen(),   // Index 1 - Information
-    const NotificationsScreen(),       // Index 2 - Notifications
+    const NotificationScreen(),        // Index 2 - Notifications (Updated!)
     const ProfileScreen(),             // Index 3 - Profile
   ];
 
@@ -212,180 +213,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
       ),
-    );
-  }
-}
-
-// Enhanced notifications screen
-class NotificationsScreen extends StatelessWidget {
-  const NotificationsScreen({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text(
-          'Notifications',
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        centerTitle: false,
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Icon container with animation-ready design
-              Container(
-                padding: const EdgeInsets.all(32),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: theme.colorScheme.primary.withOpacity(0.2),
-                    width: 2,
-                  ),
-                ),
-                child: Icon(
-                  Icons.notifications_off_outlined,
-                  size: 64,
-                  color: theme.colorScheme.primary.withOpacity(0.6),
-                ),
-              ),
-              const SizedBox(height: 32),
-              
-              // Title
-              Text(
-                'Coming Soon',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 12),
-              
-              // Subtitle
-              Text(
-                'Notification Center',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              
-              // Description
-              Text(
-                'Stay updated with important alerts, device status changes, and emergency notifications. This feature will be available in a future update.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8),
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              
-              // Feature list
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: theme.colorScheme.outline.withOpacity(0.2),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      'Upcoming Features:',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildFeatureItem(
-                      context,
-                      Icons.security_rounded,
-                      'Security Alerts',
-                      'Get notified about device security events',
-                    ),
-                    const SizedBox(height: 8),
-                    _buildFeatureItem(
-                      context,
-                      Icons.battery_alert_rounded,
-                      'Device Status',
-                      'Battery and connectivity notifications',
-                    ),
-                    const SizedBox(height: 8),
-                    _buildFeatureItem(
-                      context,
-                      Icons.warning_rounded,
-                      'Emergency Updates',
-                      'Critical safety information and alerts',
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFeatureItem(BuildContext context, IconData icon, String title, String description) {
-    final theme = Theme.of(context);
-    
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            icon,
-            size: 16,
-            color: theme.colorScheme.primary,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-              Text(
-                description,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

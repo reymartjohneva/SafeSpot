@@ -31,10 +31,11 @@ class EmergencyAppBar extends StatelessWidget {
           ),
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   FadeTransition(
                     opacity: fadeAnimation,
@@ -55,7 +56,7 @@ class EmergencyAppBar extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   FadeTransition(
                     opacity: fadeAnimation,
                     child: const Text(
@@ -65,6 +66,7 @@ class EmergencyAppBar extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                         letterSpacing: -0.5,
+                        height: 1.1,
                       ),
                     ),
                   ),
@@ -82,12 +84,15 @@ class EmergencyAppBar extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          'Quick access to emergency contacts',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.white.withOpacity(0.7),
-                            fontWeight: FontWeight.w400,
+                        Flexible(
+                          child: Text(
+                            'Quick access to emergency contacts',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white.withOpacity(0.7),
+                              fontWeight: FontWeight.w400,
+                              height: 1.2,
+                            ),
                           ),
                         ),
                       ],

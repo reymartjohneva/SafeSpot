@@ -63,7 +63,16 @@ class DeviceInfoPopup extends StatelessWidget {
             children: [
               _buildCompactHeader(context),
               const SizedBox(height: 8),
-              ..._buildCompactInfoItems(context),
+              Flexible(
+                child: SingleChildScrollView(
+                  physics: const NeverScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: _buildCompactInfoItems(context),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

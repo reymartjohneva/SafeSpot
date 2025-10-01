@@ -26,33 +26,38 @@ class EmergencyCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF2A2A2A), // Dark card background
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
           if (isPrimary)
             BoxShadow(
-              color: color.withOpacity(0.15),
+              color: color.withOpacity(0.2),
               blurRadius: 30,
               offset: const Offset(0, 8),
             ),
         ],
         border: isPrimary
             ? Border.all(
-                color: color.withOpacity(0.2),
+                color: color.withOpacity(0.3),
                 width: 2,
               )
-            : null,
+            : Border.all(
+                color: Colors.white.withOpacity(0.1),
+                width: 1,
+              ),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(24),
           onTap: onTap,
+          splashColor: color.withOpacity(0.1),
+          highlightColor: color.withOpacity(0.05),
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Row(
@@ -81,13 +86,13 @@ class EmergencyCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            color.withOpacity(0.15),
-            color.withOpacity(0.05),
+            color.withOpacity(0.2),
+            color.withOpacity(0.1),
           ],
         ),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: color.withOpacity(0.2),
+          color: color.withOpacity(0.3),
           width: 1.5,
         ),
       ),
@@ -108,7 +113,7 @@ class EmergencyCard extends StatelessWidget {
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF1A1A1A),
+            color: Colors.white,
             letterSpacing: -0.3,
           ),
         ),
@@ -116,8 +121,12 @@ class EmergencyCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withOpacity(0.15),
             borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: color.withOpacity(0.3),
+              width: 1,
+            ),
           ),
           child: Text(
             subtitle,
@@ -134,7 +143,7 @@ class EmergencyCard extends StatelessWidget {
           description,
           style: TextStyle(
             fontSize: 13,
-            color: Colors.grey.shade600,
+            color: Colors.grey.shade400,
             height: 1.3,
           ),
         ),

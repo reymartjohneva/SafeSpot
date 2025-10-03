@@ -22,7 +22,6 @@ class EditChildInfoScreen extends StatefulWidget {
 
 class _EditChildInfoScreenState extends State<EditChildInfoScreen>
     with EditChildInfoLogic {
-  
   @override
   final EditChildInfoState state = EditChildInfoState();
 
@@ -63,6 +62,7 @@ class _EditChildInfoScreenState extends State<EditChildInfoScreen>
       onRelationshipChanged: (value) {
         state.relationshipController.text = value ?? '';
       },
+      onAvatarTap: showAvatarPicker,
     );
   }
 }

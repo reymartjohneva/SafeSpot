@@ -55,7 +55,7 @@ class _EmergencyHotlinesScreenState extends State<EmergencyHotlinesScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: const Color.fromARGB(255, 25, 24, 24),
       body: CustomScrollView(
         slivers: [
           EmergencyAppBar(

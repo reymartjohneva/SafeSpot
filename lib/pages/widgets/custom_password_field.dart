@@ -42,8 +42,8 @@ class _CustomPasswordFieldState extends State<CustomPasswordField>
     ));
     
     _borderColorAnimation = ColorTween(
-      begin: Colors.white.withOpacity(0.3),
-      end: Colors.brown.shade400,
+      begin: const Color(0xFFFF6B35).withOpacity(0.2),
+      end: const Color(0xFFFF6B35),
     ).animate(CurvedAnimation(
       parent: _focusController,
       curve: Curves.easeInOut,
@@ -80,7 +80,7 @@ class _CustomPasswordFieldState extends State<CustomPasswordField>
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: _isFocused 
-                      ? Colors.brown.shade300
+                      ? const Color(0xFFFF6B35)
                       : Colors.white.withOpacity(0.9),
                 ),
                 child: const Text('Password'),
@@ -92,19 +92,19 @@ class _CustomPasswordFieldState extends State<CustomPasswordField>
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Colors.white.withOpacity(_isFocused ? 0.2 : 0.1),
-                      Colors.white.withOpacity(_isFocused ? 0.15 : 0.05),
+                      const Color(0xFF141414).withOpacity(_isFocused ? 0.8 : 0.6),
+                      const Color(0xFF0a0a0a).withOpacity(_isFocused ? 0.7 : 0.5),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(15),
                   border: Border.all(
-                    color: _borderColorAnimation.value ?? Colors.white.withOpacity(0.3),
+                    color: _borderColorAnimation.value ?? const Color(0xFFFF6B35).withOpacity(0.2),
                     width: _isFocused ? 2.0 : 1.0,
                   ),
                   boxShadow: [
                     if (_isFocused)
                       BoxShadow(
-                        color: Colors.brown.withOpacity(0.2 * _shadowAnimation.value),
+                        color: const Color(0xFFFF6B35).withOpacity(0.2 * _shadowAnimation.value),
                         blurRadius: 15 * _shadowAnimation.value,
                         offset: const Offset(0, 5),
                         spreadRadius: 2 * _shadowAnimation.value,
@@ -142,7 +142,7 @@ class _CustomPasswordFieldState extends State<CustomPasswordField>
                         child: Icon(
                           Icons.lock_outline,
                           color: _isFocused 
-                              ? Colors.brown.shade300
+                              ? const Color(0xFFFF6B35)
                               : Colors.white.withOpacity(0.7),
                           size: 22,
                         ),
@@ -157,7 +157,7 @@ class _CustomPasswordFieldState extends State<CustomPasswordField>
                           icon: Icon(
                             _obscurePassword ? Icons.visibility_off : Icons.visibility,
                             color: _isFocused 
-                                ? Colors.brown.shade300
+                                ? const Color(0xFFFF6B35)
                                 : Colors.white.withOpacity(0.7),
                             size: 22,
                           ),

@@ -75,15 +75,15 @@ class _LoginButtonState extends State<LoginButton>
             colors: widget.isLoading
                 ? [Colors.grey.shade400, Colors.grey.shade500]
                 : _isHovered
-                    ? [Colors.brown.shade300, Colors.brown.shade700]
-                    : [Colors.brown.shade400, Colors.brown.shade600],
+                    ? [const Color(0xFFFF9800), const Color(0xFFFF6B35)]
+                    : [const Color(0xFFFF6B35), const Color(0xFFFF9800)],
           ),
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
               color: widget.isLoading
                   ? Colors.grey.withOpacity(0.3)
-                  : Colors.brown.withOpacity(_isHovered ? 0.5 : 0.3),
+                  : const Color(0xFFFF6B35).withOpacity(_isHovered ? 0.5 : 0.3),
               blurRadius: _isHovered ? 15 : 10,
               offset: const Offset(0, 5),
               spreadRadius: _isHovered ? 3 : 0,
@@ -135,7 +135,7 @@ class _LoginButtonState extends State<LoginButton>
               child: widget.isLoading
                   ? Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
+                      children: const [
                         SizedBox(
                           height: 24,
                           width: 24,
@@ -144,8 +144,8 @@ class _LoginButtonState extends State<LoginButton>
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        const Text(
+                        SizedBox(width: 12),
+                        Text(
                           'Signing In...',
                           style: TextStyle(
                             fontSize: 18,
@@ -157,14 +157,14 @@ class _LoginButtonState extends State<LoginButton>
                     )
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
+                      children: const [
                         Icon(
                           Icons.login,
                           color: Colors.white,
                           size: 24,
                         ),
-                        const SizedBox(width: 8),
-                        const Text(
+                        SizedBox(width: 8),
+                        Text(
                           'Login',
                           style: TextStyle(
                             fontSize: 20,

@@ -10,6 +10,7 @@ class ChildInfo {
   final String? emergencyContact;
   final String? medicalInfo;
   final String? notes;
+  final String? avatarUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -24,6 +25,7 @@ class ChildInfo {
     this.emergencyContact,
     this.medicalInfo,
     this.notes,
+    this.avatarUrl,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -40,6 +42,7 @@ class ChildInfo {
       emergencyContact: json['emergency_contact'],
       medicalInfo: json['medical_info'],
       notes: json['notes'],
+      avatarUrl: json['avatar_url'],
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
     );
@@ -57,6 +60,7 @@ class ChildInfo {
       'emergency_contact': emergencyContact,
       'medical_info': medicalInfo,
       'notes': notes,
+      'avatar_url': avatarUrl,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -73,6 +77,7 @@ class ChildInfo {
     String? emergencyContact,
     String? medicalInfo,
     String? notes,
+    String? avatarUrl,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -87,6 +92,7 @@ class ChildInfo {
       emergencyContact: emergencyContact ?? this.emergencyContact,
       medicalInfo: medicalInfo ?? this.medicalInfo,
       notes: notes ?? this.notes,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

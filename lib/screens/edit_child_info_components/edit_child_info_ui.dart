@@ -1,7 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:safe_spot/screens/edit_child_info_components/edit_child_info_state.dart';
-import 'package:safe_spot/screens/edit_child_info_components/edit_child_info_validators.dart';
+import 'edit_child_info_state.dart';
 
 class EditChildInfoUI {
   static Widget buildScreen({
@@ -9,18 +8,14 @@ class EditChildInfoUI {
     required EditChildInfoState state,
     required String deviceName,
     required bool isEditMode,
-    required Future<void> Function() onSave,
-    required void Function(String) onGenderChanged,
-    required void Function(String?) onRelationshipChanged,
+    required VoidCallback onSave,
+    required Function(String?) onGenderChanged,
+    required Function(String?) onRelationshipChanged,
+    required VoidCallback onAvatarTap,
   }) {
     return Scaffold(
-      backgroundColor: EditChildInfoColors.darkBackground,
-      appBar: _buildAppBar(
-        context: context,
-        state: state,
-        isEditMode: isEditMode,
-        onSave: onSave,
-      ),
+      backgroundColor: const Color(0xFF1A1A1A),
+      appBar: _buildAppBar(context, isEditMode, onSave, state),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Form(
@@ -28,13 +23,90 @@ class EditChildInfoUI {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildDeviceInfo(deviceName),
+              // Device info card
+              _buildDeviceInfoCard(deviceName),
               const SizedBox(height: 24),
-              _buildBasicInfoSection(state, onGenderChanged, onRelationshipChanged),
+
+              // Avatar section
+              _buildAvatarSection(state, onAvatarTap),
               const SizedBox(height: 24),
-              _buildContactInfoSection(state),
+
+              // Basic Information
+              _buildSectionTitle('Basic Information'),
+              const SizedBox(height: 16),
+              _buildTextField(
+                controller: state.childNameController,
+                label: 'Child Name',
+                hint: 'Enter child\'s name',
+                icon: Icons.child_care,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Child name is required';
+                  }
+                  if (value.trim().length < 2) {
+                    return 'Name must be at least 2 characters';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              _buildTextField(
+                controller: state.ageController,
+                label: 'Age',
+                hint: 'Enter age',
+                icon: Icons.cake,
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Age is required';
+                  }
+                  final age = int.tryParse(value);
+                  if (age == null || age < 0 || age > 18) {
+                    return 'Please enter a valid age (0-18)';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              _buildGenderSelector(state, onGenderChanged),
+              const SizedBox(height: 16),
+              _buildRelationshipSelector(state, onRelationshipChanged),
+
               const SizedBox(height: 24),
-              _buildAdditionalInfoSection(state),
+
+              // Additional Information
+              _buildSectionTitle('Additional Information'),
+              const SizedBox(height: 16),
+              _buildTextField(
+                controller: state.schoolController,
+                label: 'School (Optional)',
+                hint: 'Enter school name',
+                icon: Icons.school,
+              ),
+              const SizedBox(height: 16),
+              _buildTextField(
+                controller: state.emergencyContactController,
+                label: 'Emergency Contact (Optional)',
+                hint: 'Enter emergency contact number',
+                icon: Icons.phone,
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 16),
+              _buildTextField(
+                controller: state.medicalInfoController,
+                label: 'Medical Information (Optional)',
+                hint: 'Enter medical information',
+                icon: Icons.medical_services,
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              _buildTextField(
+                controller: state.notesController,
+                label: 'Additional Notes (Optional)',
+                hint: 'Enter any additional notes',
+                icon: Icons.note,
+                maxLines: 3,
+              ),
               const SizedBox(height: 32),
             ],
           ),
@@ -43,234 +115,208 @@ class EditChildInfoUI {
     );
   }
 
-  static AppBar _buildAppBar({
-    required BuildContext context,
-    required EditChildInfoState state,
-    required bool isEditMode,
-    required Future<void> Function() onSave,
-  }) {
+  static AppBar _buildAppBar(
+    BuildContext context,
+    bool isEditMode,
+    VoidCallback onSave,
+    EditChildInfoState state,
+  ) {
     return AppBar(
       title: Text(
         isEditMode ? 'Edit Child Information' : 'Add Child Information',
         style: const TextStyle(
           fontWeight: FontWeight.w600,
-          color: EditChildInfoColors.textPrimary,
+          color: Colors.white,
         ),
       ),
       backgroundColor: Colors.black87,
       elevation: 0,
       surfaceTintColor: Colors.black87,
-      iconTheme: const IconThemeData(color: EditChildInfoColors.textPrimary),
+      iconTheme: const IconThemeData(color: Colors.white),
       actions: [
-        TextButton(
-          onPressed: state.isSaving ? null : onSave,
-          child: state.isSaving
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      EditChildInfoColors.primaryOrange,
+        if (state.hasChanges)
+          TextButton(
+            onPressed: state.isSaving ? null : onSave,
+            child:
+                state.isSaving
+                    ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Color(0xFFFF8A50),
+                        ),
+                      ),
+                    )
+                    : const Text(
+                      'Save',
+                      style: TextStyle(
+                        color: Color(0xFFFF8A50),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
                     ),
-                  ),
-                )
-              : const Text(
-                  'Save',
-                  style: TextStyle(
-                    color: EditChildInfoColors.primaryOrange,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-        ),
+          ),
       ],
     );
   }
 
-  static Widget _buildDeviceInfo(String deviceName) {
+  static Widget _buildDeviceInfoCard(String deviceName) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: EditChildInfoColors.cardBackground,
+        color: const Color(0xFF2D2D2D),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: EditChildInfoColors.borderColor),
+        border: Border.all(color: const Color(0xFF404040)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: EditChildInfoColors.primaryOrange.withOpacity(0.2),
+              color: const Color(0xFFFF8A50).withOpacity(0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
               Icons.devices,
-              color: EditChildInfoColors.primaryOrange,
+              color: Color(0xFFFF8A50),
               size: 20,
             ),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Device Information',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: EditChildInfoColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                deviceName,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: EditChildInfoColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  static Widget _buildBasicInfoSection(
-    EditChildInfoState state,
-    void Function(String) onGenderChanged,
-    void Function(String?) onRelationshipChanged,
-  ) {
-    return _buildSection(
-      title: 'Basic Information',
-      icon: Icons.person,
-      children: [
-        _buildTextField(
-          controller: state.nameController,
-          label: 'Child Name',
-          hint: 'Enter child\'s name',
-          validator: EditChildInfoValidators.validateChildName,
-        ),
-        const SizedBox(height: 16),
-        _buildTextField(
-          controller: state.ageController,
-          label: 'Age',
-          hint: 'Enter age',
-          keyboardType: TextInputType.number,
-          inputFormatters: EditChildInfoValidators.getDigitsOnlyFormatter(),
-          validator: EditChildInfoValidators.validateAge,
-        ),
-        const SizedBox(height: 16),
-        _buildDropdownField(
-          label: 'Gender',
-          value: state.selectedGender,
-          items: state.genderOptions,
-          onChanged: (value) => onGenderChanged(value!),
-        ),
-        const SizedBox(height: 16),
-        _buildDropdownField(
-          label: 'Relationship',
-          value: state.relationshipController.text.isEmpty 
-              ? null 
-              : state.relationshipController.text,
-          items: state.relationshipOptions,
-          onChanged: onRelationshipChanged,
-          isOptional: true,
-        ),
-      ],
-    );
-  }
-
-  static Widget _buildContactInfoSection(EditChildInfoState state) {
-    return _buildSection(
-      title: 'Contact Information',
-      icon: Icons.contact_phone,
-      children: [
-        _buildTextField(
-          controller: state.schoolController,
-          label: 'School (Optional)',
-          hint: 'Enter school name',
-        ),
-        const SizedBox(height: 16),
-        _buildTextField(
-          controller: state.emergencyContactController,
-          label: 'Emergency Contact (Optional)',
-          hint: 'Enter emergency contact number',
-          keyboardType: TextInputType.phone,
-          validator: EditChildInfoValidators.validateEmergencyContact,
-        ),
-      ],
-    );
-  }
-
-  static Widget _buildAdditionalInfoSection(EditChildInfoState state) {
-    return _buildSection(
-      title: 'Additional Information',
-      icon: Icons.info_outline,
-      children: [
-        _buildTextField(
-          controller: state.medicalInfoController,
-          label: 'Medical Information (Optional)',
-          hint: 'Enter any medical conditions, allergies, medications, etc.',
-          maxLines: 3,
-        ),
-        const SizedBox(height: 16),
-        _buildTextField(
-          controller: state.notesController,
-          label: 'Notes (Optional)',
-          hint: 'Enter any additional notes or information',
-          maxLines: 3,
-        ),
-      ],
-    );
-  }
-
-  static Widget _buildSection({
-    required String title,
-    required IconData icon,
-    required List<Widget> children,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: EditChildInfoColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: EditChildInfoColors.borderColor),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: EditChildInfoColors.sectionHeaderBackground,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-            ),
-            child: Row(
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  icon,
-                  color: EditChildInfoColors.primaryOrange,
-                  size: 20,
+                const Text(
+                  'Device',
+                  style: TextStyle(fontSize: 12, color: Color(0xFFB0B0B0)),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(height: 2),
                 Text(
-                  title,
+                  deviceName,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: EditChildInfoColors.textPrimary,
+                    color: Colors.white,
                   ),
                 ),
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(children: children),
+        ],
+      ),
+    );
+  }
+
+  static Widget _buildAvatarSection(
+    EditChildInfoState state,
+    VoidCallback onAvatarTap,
+  ) {
+    return Center(
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: state.isSaving ? null : onAvatarTap,
+            child: Stack(
+              children: [
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFF404040),
+                    border: Border.all(
+                      color: const Color(0xFFFF8A50),
+                      width: 3,
+                    ),
+                  ),
+                  child: ClipOval(child: _buildAvatarContent(state)),
+                ),
+                if (state.isUploadingAvatar)
+                  const Positioned.fill(
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Color(0xFFFF8A50),
+                        ),
+                      ),
+                    ),
+                  ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFF8A50),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            state.avatarImage != null || state.existingAvatarUrl != null
+                ? 'Tap to change photo'
+                : 'Tap to add photo',
+            style: const TextStyle(fontSize: 14, color: Color(0xFFB0B0B0)),
           ),
         ],
+      ),
+    );
+  }
+
+  static Widget _buildAvatarContent(EditChildInfoState state) {
+    if (state.avatarImage != null) {
+      return Image.file(
+        state.avatarImage!,
+        fit: BoxFit.cover,
+        width: 120,
+        height: 120,
+      );
+    } else if (state.existingAvatarUrl != null) {
+      return Image.network(
+        state.existingAvatarUrl!,
+        fit: BoxFit.cover,
+        width: 120,
+        height: 120,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF8A50)),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return const Icon(
+            Icons.child_care,
+            size: 60,
+            color: Color(0xFFB0B0B0),
+          );
+        },
+      );
+    } else {
+      return const Icon(Icons.child_care, size: 60, color: Color(0xFFB0B0B0));
+    }
+  }
+
+  static Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: Colors.white,
       ),
     );
   }
@@ -279,103 +325,183 @@ class EditChildInfoUI {
     required TextEditingController controller,
     required String label,
     required String hint,
+    required IconData icon,
     int maxLines = 1,
     TextInputType? keyboardType,
-    List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) {
-    return TextFormField(
-      controller: controller,
-      maxLines: maxLines,
-      keyboardType: keyboardType,
-      inputFormatters: inputFormatters,
-      validator: validator,
-      style: const TextStyle(color: EditChildInfoColors.textPrimary),
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        labelStyle: const TextStyle(color: EditChildInfoColors.textSecondary),
-        hintStyle: const TextStyle(color: EditChildInfoColors.textHint),
-        filled: true,
-        fillColor: EditChildInfoColors.inputBackground,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: EditChildInfoColors.primaryOrange,
-            width: 2,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFFB0B0B0),
           ),
         ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: EditChildInfoColors.errorRed,
-            width: 2,
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          maxLines: maxLines,
+          keyboardType: keyboardType,
+          validator: validator,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: hint,
+            prefixIcon: Icon(icon, color: const Color(0xFF808080), size: 20),
+            hintStyle: const TextStyle(color: Color(0xFF808080)),
+            filled: true,
+            fillColor: const Color(0xFF2D2D2D),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFF404040)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFF404040)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFFF8A50), width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
           ),
         ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: EditChildInfoColors.errorRed,
-            width: 2,
-          ),
-        ),
-      ),
+      ],
     );
   }
 
-  static Widget _buildDropdownField({
-    required String label,
-    required String? value,
-    required List<String> items,
-    required void Function(String?) onChanged,
-    bool isOptional = false,
-  }) {
-    return DropdownButtonFormField<String>(
-      value: value,
-      style: const TextStyle(color: EditChildInfoColors.textPrimary),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: EditChildInfoColors.textSecondary),
-        filled: true,
-        fillColor: EditChildInfoColors.inputBackground,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: EditChildInfoColors.primaryOrange,
-            width: 2,
+  static Widget _buildGenderSelector(
+    EditChildInfoState state,
+    Function(String?) onChanged,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Gender',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFFB0B0B0),
           ),
         ),
-      ),
-      dropdownColor: EditChildInfoColors.cardBackground,
-      validator: isOptional
-          ? null
-          : (value) => EditChildInfoValidators.validateDropdownRequired(value, label),
-      items: [
-        if (isOptional)
-          const DropdownMenuItem<String>(
-            value: null,
-            child: Text(
-              'Select an option',
-              style: TextStyle(color: EditChildInfoColors.textHint),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2D2D2D),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF404040)),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: state.selectedGender,
+              hint: const Text(
+                'Select gender',
+                style: TextStyle(color: Color(0xFF808080)),
+              ),
+              isExpanded: true,
+              dropdownColor: const Color(0xFF2D2D2D),
+              icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFFF8A50)),
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              items:
+                  ['Male', 'Female', 'Other'].map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Row(
+                        children: [
+                          Icon(
+                            value == 'Male'
+                                ? Icons.male
+                                : value == 'Female'
+                                ? Icons.female
+                                : Icons.person,
+                            color: const Color(0xFFFF8A50),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(value),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+              onChanged: onChanged,
             ),
           ),
-        ...items.map((item) => DropdownMenuItem<String>(
-              value: item,
-              child: Text(
-                item,
-                style: const TextStyle(color: EditChildInfoColors.textPrimary),
-              ),
-            )),
+        ),
       ],
-      onChanged: onChanged,
+    );
+  }
+
+  static Widget _buildRelationshipSelector(
+    EditChildInfoState state,
+    Function(String?) onChanged,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Relationship (Optional)',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFFB0B0B0),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2D2D2D),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF404040)),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value:
+                  state.relationshipController.text.isEmpty
+                      ? null
+                      : state.relationshipController.text,
+              hint: const Text(
+                'Select relationship',
+                style: TextStyle(color: Color(0xFF808080)),
+              ),
+              isExpanded: true,
+              dropdownColor: const Color(0xFF2D2D2D),
+              icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFFF8A50)),
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              items:
+                  ['Son', 'Daughter', 'Sibling', 'Other'].map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.family_restroom,
+                            color: Color(0xFFFF8A50),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(value),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

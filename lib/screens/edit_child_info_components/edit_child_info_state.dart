@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 // Color constants for Child Info theme
@@ -17,38 +18,32 @@ class EditChildInfoColors {
 
 // State data class
 class EditChildInfoState {
-  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController ageController = TextEditingController();
-  final TextEditingController relationshipController = TextEditingController();
-  final TextEditingController schoolController = TextEditingController();
-  final TextEditingController emergencyContactController = TextEditingController();
-  final TextEditingController medicalInfoController = TextEditingController();
-  final TextEditingController notesController = TextEditingController();
+  final formKey = GlobalKey<FormState>();
 
-  String selectedGender = 'Male';
+  // Text controllers
+  final childNameController = TextEditingController();
+  final ageController = TextEditingController();
+  final schoolController = TextEditingController();
+  final emergencyContactController = TextEditingController();
+  final medicalInfoController = TextEditingController();
+  final notesController = TextEditingController();
+  final relationshipController = TextEditingController();
+
+  // State variables
+  String? selectedGender;
+  File? avatarImage;
+  String? existingAvatarUrl;
+  bool isUploadingAvatar = false;
   bool isSaving = false;
-
-  // Dropdown options
-  final List<String> genderOptions = ['Male', 'Female', 'Other'];
-  final List<String> relationshipOptions = [
-    'Son',
-    'Daughter',
-    'Brother',
-    'Sister',
-    'Nephew',
-    'Niece',
-    'Grandchild',
-    'Other'
-  ];
+  bool hasChanges = false;
 
   void dispose() {
-    nameController.dispose();
+    childNameController.dispose();
     ageController.dispose();
-    relationshipController.dispose();
     schoolController.dispose();
     emergencyContactController.dispose();
     medicalInfoController.dispose();
     notesController.dispose();
+    relationshipController.dispose();
   }
 }

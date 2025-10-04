@@ -74,22 +74,22 @@ class _LoginHeaderState extends State<LoginHeader>
                     width: 120,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: RadialGradient(
+                      gradient: const RadialGradient(
                         colors: [
-                          Colors.brown.shade300,
-                          Colors.brown.shade600,
-                          Colors.brown.shade800,
+                          Color(0xFFFF6B35),
+                          Color(0xFFFF9800),
+                          Color(0xFFFF6B35),
                         ],
-                        stops: const [0.3, 0.7, 1.0],
+                        stops: [0.3, 0.7, 1.0],
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.brown.withOpacity(0.4),
+                          color: const Color(0xFFFF6B35).withOpacity(0.4),
                           blurRadius: 25,
                           spreadRadius: 8,
                         ),
                         BoxShadow(
-                          color: Colors.brown.withOpacity(0.2),
+                          color: const Color(0xFFFF6B35).withOpacity(0.2),
                           blurRadius: 40,
                           spreadRadius: 15,
                         ),
@@ -102,14 +102,14 @@ class _LoginHeaderState extends State<LoginHeader>
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               shape: BoxShape.circle,
                               gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: [
-                                  Colors.brown.shade300,
-                                  Colors.brown.shade600,
+                                  Color(0xFFFF6B35),
+                                  Color(0xFFFF9800),
                                 ],
                               ),
                             ),
@@ -133,15 +133,15 @@ class _LoginHeaderState extends State<LoginHeader>
 
           // App name with enhanced shadow and gradient
           ShaderMask(
-            shaderCallback: (bounds) => LinearGradient(
+            shaderCallback: (bounds) => const LinearGradient(
               colors: [
                 Colors.white,
-                Colors.brown.shade200,
+                Color(0xFFFF9800),
                 Colors.white,
               ],
-              stops: const [0.0, 0.5, 1.0],
+              stops: [0.0, 0.5, 1.0],
             ).createShader(bounds),
-            child: Text(
+            child: const Text(
               'SafeSpot',
               style: TextStyle(
                 fontSize: 42,
@@ -150,13 +150,13 @@ class _LoginHeaderState extends State<LoginHeader>
                 letterSpacing: 2.0,
                 shadows: [
                   Shadow(
-                    color: Colors.black.withOpacity(0.5),
-                    offset: const Offset(2, 2),
+                    color: Colors.black54,
+                    offset: Offset(2, 2),
                     blurRadius: 4,
                   ),
                   Shadow(
-                    color: Colors.brown.withOpacity(0.3),
-                    offset: const Offset(0, 0),
+                    color: Color(0xFFFF6B35),
+                    offset: Offset(0, 0),
                     blurRadius: 20,
                   ),
                 ],
@@ -170,7 +170,7 @@ class _LoginHeaderState extends State<LoginHeader>
             tween: Tween<double>(begin: 0, end: 1),
             duration: const Duration(milliseconds: 2000),
             builder: (context, value, child) {
-              final text = 'Your Safety, Our Priority';
+              const text = 'Your Safety, Our Priority';
               final displayText = text.substring(0, (text.length * value).round());
               
               return Text(
@@ -180,10 +180,10 @@ class _LoginHeaderState extends State<LoginHeader>
                   color: Colors.white.withOpacity(0.95),
                   fontWeight: FontWeight.w400,
                   letterSpacing: 1.2,
-                  shadows: [
+                  shadows: const [
                     Shadow(
-                      color: Colors.black.withOpacity(0.3),
-                      offset: const Offset(1, 1),
+                      color: Colors.black38,
+                      offset: Offset(1, 1),
                       blurRadius: 2,
                     ),
                   ],

@@ -1,6 +1,7 @@
 // lib/widgets/child_info_card.dart
 import 'package:flutter/material.dart';
 import 'package:safe_spot/models/child_info.dart';
+import 'package:safe_spot/widgets/child_avatar_widget.dart';
 
 class ChildInfoCard extends StatelessWidget {
   final ChildInfo childInfo;
@@ -34,7 +35,7 @@ class ChildInfoCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Header with device info and actions
+          // Header with avatar, device info and actions
           Container(
             padding: const EdgeInsets.all(20),
             decoration: const BoxDecoration(
@@ -46,19 +47,14 @@ class ChildInfoCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFF8A50).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.child_care,
-                    color: Color(0xFFFF8A50),
-                    size: 20,
-                  ),
+                // Avatar
+                ChildAvatarWidget(
+                  avatarUrl: childInfo.avatarUrl,
+                  childName: childInfo.childName,
+                  size: 60,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
+                // Child info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,7 +67,7 @@ class ChildInfoCard extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       Text(
                         'Device: $deviceName',
                         style: const TextStyle(
@@ -82,12 +78,10 @@ class ChildInfoCard extends StatelessWidget {
                     ],
                   ),
                 ),
+                // Menu
                 PopupMenuButton<String>(
                   color: const Color(0xFF2D2D2D),
-                  icon: const Icon(
-                    Icons.more_vert,
-                    color: Color(0xFFB0B0B0),
-                  ),
+                  icon: const Icon(Icons.more_vert, color: Color(0xFFB0B0B0)),
                   onSelected: (value) {
                     if (value == 'edit') {
                       onEdit();
@@ -95,39 +89,44 @@ class ChildInfoCard extends StatelessWidget {
                       onDelete();
                     }
                   },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit, color: Color(0xFFFF8A50), size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            'Edit',
-                            style: TextStyle(color: Colors.white),
+                  itemBuilder:
+                      (context) => [
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.edit,
+                                color: Color(0xFFFF8A50),
+                                size: 20,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Edit',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete, color: Colors.red, size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            'Delete',
-                            style: TextStyle(color: Colors.white),
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete, color: Colors.red, size: 20),
+                              SizedBox(width: 8),
+                              Text(
+                                'Delete',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
+                        ),
+                      ],
                 ),
               ],
             ),
           ),
-          
+
           // Child information content
           Padding(
             padding: const EdgeInsets.all(20),
@@ -135,14 +134,29 @@ class ChildInfoCard extends StatelessWidget {
               children: [
                 _buildInfoRow('Age', '${childInfo.age} years old', Icons.cake),
                 _buildInfoRow('Gender', childInfo.gender, Icons.person),
-                if (childInfo.relationship != null && childInfo.relationship!.isNotEmpty)
-                  _buildInfoRow('Relationship', childInfo.relationship!, Icons.family_restroom),
+                if (childInfo.relationship != null &&
+                    childInfo.relationship!.isNotEmpty)
+                  _buildInfoRow(
+                    'Relationship',
+                    childInfo.relationship!,
+                    Icons.family_restroom,
+                  ),
                 if (childInfo.school != null && childInfo.school!.isNotEmpty)
                   _buildInfoRow('School', childInfo.school!, Icons.school),
-                if (childInfo.emergencyContact != null && childInfo.emergencyContact!.isNotEmpty)
-                  _buildInfoRow('Emergency Contact', childInfo.emergencyContact!, Icons.phone),
-                if (childInfo.medicalInfo != null && childInfo.medicalInfo!.isNotEmpty)
-                  _buildInfoRow('Medical Info', childInfo.medicalInfo!, Icons.medical_services),
+                if (childInfo.emergencyContact != null &&
+                    childInfo.emergencyContact!.isNotEmpty)
+                  _buildInfoRow(
+                    'Emergency Contact',
+                    childInfo.emergencyContact!,
+                    Icons.phone,
+                  ),
+                if (childInfo.medicalInfo != null &&
+                    childInfo.medicalInfo!.isNotEmpty)
+                  _buildInfoRow(
+                    'Medical Info',
+                    childInfo.medicalInfo!,
+                    Icons.medical_services,
+                  ),
                 if (childInfo.notes != null && childInfo.notes!.isNotEmpty)
                   _buildInfoRow('Notes', childInfo.notes!, Icons.note),
               ],
@@ -165,11 +179,7 @@ class ChildInfoCard extends StatelessWidget {
               color: const Color(0xFF404040),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Icon(
-              icon,
-              size: 16,
-              color: const Color(0xFFB0B0B0),
-            ),
+            child: Icon(icon, size: 16, color: const Color(0xFFB0B0B0)),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -187,10 +197,7 @@ class ChildInfoCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.white,
-                  ),
+                  style: const TextStyle(fontSize: 14, color: Colors.white),
                 ),
               ],
             ),

@@ -67,14 +67,13 @@ class _LoginFormState extends State<LoginForm>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white.withOpacity(0.2),
-                  Colors.white.withOpacity(0.15),
-                  Colors.white.withOpacity(0.1),
+                  const Color(0xFF141414).withOpacity(0.8),
+                  const Color(0xFF0a0a0a).withOpacity(0.7),
                 ],
               ),
               borderRadius: BorderRadius.circular(30),
               border: Border.all(
-                color: Colors.white.withOpacity(0.3),
+                color: const Color(0xFFFF6B35).withOpacity(0.3),
                 width: 2,
               ),
               boxShadow: [
@@ -84,7 +83,7 @@ class _LoginFormState extends State<LoginForm>
                   offset: const Offset(0, 15),
                 ),
                 BoxShadow(
-                  color: Colors.white.withOpacity(0.1),
+                  color: const Color(0xFFFF6B35).withOpacity(0.1),
                   blurRadius: 10,
                   offset: const Offset(-5, -5),
                 ),
@@ -96,10 +95,10 @@ class _LoginFormState extends State<LoginForm>
                 // Welcome back text with gradient
                 Center(
                   child: ShaderMask(
-                    shaderCallback: (bounds) => LinearGradient(
+                    shaderCallback: (bounds) => const LinearGradient(
                       colors: [
                         Colors.white,
-                        Colors.brown.shade200,
+                        Color(0xFFFF9800),
                       ],
                     ).createShader(bounds),
                     child: const Text(
@@ -170,7 +169,7 @@ class _LoginFormState extends State<LoginForm>
                           child: Container(
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(8),
-                              color: Colors.white.withOpacity(0.1),
+                              color: const Color(0xFFFF6B35).withOpacity(0.1),
                             ),
                             child: TextButton(
                               onPressed: widget.isLoading ? null : widget.onForgotPassword,
@@ -183,7 +182,9 @@ class _LoginFormState extends State<LoginForm>
                               child: Text(
                                 'Forgot Password?',
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.9),
+                                  color: widget.isLoading 
+                                      ? Colors.grey
+                                      : const Color(0xFFFF6B35),
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
                                 ),

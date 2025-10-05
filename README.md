@@ -1,6 +1,52 @@
+<div align="center">
+
+<img src="assets/app1_icon.png" alt="SafeSpot Logo" width="120" height="120">
+
 # SafeSpot
 
-SafeSpot is a Flutter application designed to help users create, manage, and monitor geofenced safe zones with real-time location tracking. Geofencing allows users to define virtual boundaries around real-world locations, and the app provides notifications when a device enters or leaves these zones. It is ideal for personal safety, family monitoring, and device management scenarios.
+### *Intelligent Geofencing with Predictive Safety*
+
+[![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev/)
+[![TensorFlow](https://img.shields.io/badge/TensorFlow_Lite-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white)](https://www.tensorflow.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
+
+*Real-time location tracking meets AI-powered movement prediction for proactive safety monitoring*
+
+[Features](#-features) • [Getting Started](#-getting-started) • [LSTM Model](#-lstm-movement-prediction) • [Contributing](#-contributing)
+
+</div>
+
+---
+
+## 📱 Overview
+
+**SafeSpot** is a next-generation Flutter application that revolutionizes personal safety through intelligent geofencing and AI-powered movement prediction. By combining real-time location tracking with LSTM neural networks, SafeSpot doesn't just monitor where you are—it predicts where you're going and proactively alerts you to potential safety concerns.
+
+Perfect for **personal safety**, **family monitoring**, and **device management** scenarios.
+
+---
+
+## ✨ Features
+
+<table>
+<tr>
+<td width="50%">
+
+### 🗺️ **Core Functionality**
+- **Real-Time Location Tracking**  
+  Monitor current location with interactive map visualization
+  
+- **Custom Geofence Creation**  
+  Draw virtual boundaries by adding and moving points directly on the map
+  
+- **Smart Geofence Management**  
+  Activate, deactivate, and delete zones with ease
+  
+- **Location History Tracking**  
+  Analyze movement patterns over time
+
+</td>
+<td width="50%">
 
 ## Features
 - **Real-Time Location Tracking:** Monitor your current location and view your movement history on an interactive map.

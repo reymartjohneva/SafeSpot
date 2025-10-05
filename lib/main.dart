@@ -4,6 +4,7 @@ import 'pages/login_page.dart';
 import 'screens/device_screen.dart';
 import 'pages/registration_page.dart';
 import 'services/auth_service.dart';
+import 'services/firebase_sync_service.dart';
 import 'screens/profile_screen.dart';
 import 'widgets/nav_bar.dart';
 import 'screens/emergency_hotlines_screen.dart';
@@ -16,6 +17,9 @@ void main() async {
     anonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpibm51c21qcHd2dHNpZ3Z2bGhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3NTgwODQsImV4cCI6MjA2OTMzNDA4NH0.GWG-9PLnpYU2-foc8wI7fzPza746TGVgmMgab2geZvk',
   );
+
+  // Start Firebase to Supabase sync (every 5 minutes)
+  FirebaseSyncService.startAutoSync(interval: const Duration(minutes: 5));
 
   runApp(const MyApp());
 }
@@ -48,17 +52,16 @@ class MyApp extends StatelessWidget {
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: Colors.grey.shade200,
-              width: 1,
-            ),
+            side: BorderSide(color: Colors.grey.shade200, width: 1),
           ),
         ),
       ),
       home: const AuthWrapper(),
       routes: {
         '/login': (context) => const LoginPage(),
-        '/home': (context) => const AuthenticatedRoute(child: MainNavigationScreen()),
+        '/home':
+            (context) =>
+                const AuthenticatedRoute(child: MainNavigationScreen()),
         '/register': (context) => const RegistrationPage(),
       },
     );
@@ -83,7 +86,9 @@ class AuthWrapper extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -130,7 +135,9 @@ class AuthenticatedRoute extends StatelessWidget {
       return child;
     } else {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
       });
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -153,10 +160,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
 
   // Define the screens list to ensure proper indexing
   final List<Widget> _screens = [
-    const DeviceScreen(),              // Index 0 - Home
-    const EmergencyHotlinesScreen(),   // Index 1 - Information
-    const NotificationScreen(),        // Index 2 - Notifications (Updated!)
-    const ProfileScreen(),             // Index 3 - Profile
+    const DeviceScreen(), // Index 0 - Home
+    const EmergencyHotlinesScreen(), // Index 1 - Information
+    const NotificationScreen(), // Index 2 - Notifications (Updated!)
+    const ProfileScreen(), // Index 3 - Profile
   ];
 
   @override
@@ -181,14 +188,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
       setState(() {
         _selectedIndex = index;
       });
-      
+
       // Smooth page transition
       _pageController.animateToPage(
         index,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOutCubic,
       );
-      
+
       // Add a subtle animation feedback
       _animationController.forward().then((_) {
         _animationController.reverse();

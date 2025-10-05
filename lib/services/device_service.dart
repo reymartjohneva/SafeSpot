@@ -114,11 +114,12 @@ class DeviceService {
     int limit = 100,
   }) async {
     try {
+      // Directly fetch location history using device_id
       final response = await _supabase
           .from('location_history')
           .select('*')
-          .eq('child_id', deviceId)
-          .order('created_at', ascending: false)
+          .eq('device_id', deviceId)
+          .order('timestamp', ascending: false)
           .limit(limit);
 
       return (response as List)
@@ -137,11 +138,14 @@ class DeviceService {
     double? speed, // Add optional speed parameter
   }) async {
     try {
+      // Directly insert location history using device_id
       await _supabase.from('location_history').insert({
-        'child_id': deviceId,
+        'device_id': deviceId,
         'latitude': latitude,
         'longitude': longitude,
-        'speed': speed, // Include speed in insert
+        'speed': speed,
+        'timestamp': DateTime.now().toUtc().toIso8601String(),
+        'source': 'app',
       });
     } catch (e) {
       throw Exception('Failed to save location: $e');
@@ -195,41 +199,53 @@ class Device {
 }
 
 class LocationHistory {
-  final int id;
-  final String childId;
+  final String id; // UUID as String
+  final String deviceId; // Changed from childId
   final double latitude;
   final double longitude;
+  final DateTime timestamp; // Changed from createdAt
   final DateTime createdAt;
-  final double? speed; // Add speed field (nullable)
+  final double? speed;
+  final String source; // 'firebase' or 'app'
 
   LocationHistory({
     required this.id,
-    required this.childId,
+    required this.deviceId,
     required this.latitude,
     required this.longitude,
+    required this.timestamp,
     required this.createdAt,
-    this.speed, // Make it optional
+    this.speed,
+    this.source = 'app',
   });
 
   factory LocationHistory.fromJson(Map<String, dynamic> json) {
+    // Handle both int and String for id (database uses integer, we store as String)
+    final id = json['id'];
+    final idString = id.toString();
+
     return LocationHistory(
-      id: json['id'],
-      childId: json['child_id'],
-      latitude: json['latitude'].toDouble(),
-      longitude: json['longitude'].toDouble(),
-      createdAt: DateTime.parse(json['created_at']),
-      speed: json['speed']?.toDouble(), // Handle null values
+      id: idString,
+      deviceId: json['device_id'] as String,
+      latitude: (json['latitude'] as num).toDouble(),
+      longitude: (json['longitude'] as num).toDouble(),
+      timestamp: DateTime.parse(json['timestamp'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String),
+      speed: json['speed'] != null ? (json['speed'] as num).toDouble() : null,
+      source: json['source'] as String? ?? 'app',
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'child_id': childId,
+      'device_id': deviceId,
       'latitude': latitude,
       'longitude': longitude,
+      'timestamp': timestamp.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
       'speed': speed,
+      'source': source,
     };
   }
 }

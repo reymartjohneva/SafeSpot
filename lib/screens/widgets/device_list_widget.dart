@@ -41,12 +41,12 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
       duration: const Duration(seconds: 2),
       vsync: this,
     )..repeat(reverse: true);
-    
+
     slideController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    
+
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) {
         slideController.forward();
@@ -74,15 +74,14 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
         } else if (constraints.maxHeight < 200) {
           return buildHorizontalView();
         }
-        
+
         return SlideTransition(
           position: Tween<Offset>(
             begin: const Offset(0, 0.1),
             end: Offset.zero,
-          ).animate(CurvedAnimation(
-            parent: slideController,
-            curve: Curves.elasticOut,
-          )),
+          ).animate(
+            CurvedAnimation(parent: slideController, curve: Curves.elasticOut),
+          ),
           child: Column(
             children: [
               buildModernHeader(),
@@ -96,15 +95,20 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
                       position: Tween<Offset>(
                         begin: const Offset(0.3, 0),
                         end: Offset.zero,
-                      ).animate(CurvedAnimation(
-                        parent: slideController,
-                        curve: Interval(
-                          index * 0.1,
-                          (index * 0.1) + 0.3,
-                          curve: Curves.elasticOut,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: slideController,
+                          curve: Interval(
+                            index * 0.1,
+                            (index * 0.1) + 0.3,
+                            curve: Curves.elasticOut,
+                          ),
                         ),
-                      )),
-                      child: buildModernDeviceCard(widget.devices[index], index),
+                      ),
+                      child: buildModernDeviceCard(
+                        widget.devices[index],
+                        index,
+                      ),
                     );
                   },
                 ),
@@ -124,10 +128,7 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            darkSurface,
-            darkSurfaceVariant.withOpacity(0.8),
-          ],
+          colors: [darkSurface, darkSurfaceVariant.withOpacity(0.8)],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -154,7 +155,11 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
                 ),
               ],
             ),
-            child: const Icon(Icons.devices_rounded, color: Colors.white, size: 24),
+            child: const Icon(
+              Icons.devices_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
           ),
           Expanded(
             child: Column(
@@ -171,7 +176,10 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
                 ),
                 const SizedBox(height: 2),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.green.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(10),
@@ -219,10 +227,7 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  darkSurface,
-                  darkSurfaceVariant.withOpacity(0.8),
-                ],
+                colors: [darkSurface, darkSurfaceVariant.withOpacity(0.8)],
               ),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
@@ -238,7 +243,11 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
                     color: orangeAccent,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.devices_rounded, color: Colors.white, size: 20),
+                  child: const Icon(
+                    Icons.devices_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -267,7 +276,10 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
                   animation: pulseController,
                   builder: (context, child) {
                     return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: orangeAccent.withOpacity(
                           0.1 + (pulseController.value * 0.1),
@@ -322,10 +334,7 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              darkSurface,
-              darkSurfaceVariant.withOpacity(0.6),
-            ],
+            colors: [darkSurface, darkSurfaceVariant.withOpacity(0.6)],
           ),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: deviceColor.withOpacity(0.4), width: 1.5),
@@ -360,7 +369,9 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
                 alignment: Alignment.center,
                 children: [
                   Icon(
-                    device.isActive ? Icons.smartphone : Icons.smartphone_outlined,
+                    device.isActive
+                        ? Icons.smartphone
+                        : Icons.smartphone_outlined,
                     color: Colors.white,
                     size: 20,
                   ),
@@ -375,12 +386,20 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
                             width: 8 + (pulseController.value * 2),
                             height: 8 + (pulseController.value * 2),
                             decoration: BoxDecoration(
-                              color: latestLocation != null ? Colors.green : Colors.orange,
+                              color:
+                                  latestLocation != null
+                                      ? Colors.green
+                                      : Colors.orange,
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 1.5),
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 1.5,
+                              ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: (latestLocation != null ? Colors.green : Colors.orange)
+                                  color: (latestLocation != null
+                                          ? Colors.green
+                                          : Colors.orange)
                                       .withOpacity(0.6),
                                   blurRadius: 4 + (pulseController.value * 2),
                                 ),
@@ -409,15 +428,19 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: device.isActive 
-                    ? Colors.green.withOpacity(0.2) 
-                    : Colors.grey.withOpacity(0.2),
+                color:
+                    device.isActive
+                        ? Colors.green.withOpacity(0.2)
+                        : Colors.grey.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 device.isActive ? 'Online' : 'Offline',
                 style: TextStyle(
-                  color: device.isActive ? Colors.green.shade300 : Colors.grey.shade400,
+                  color:
+                      device.isActive
+                          ? Colors.green.shade300
+                          : Colors.grey.shade400,
                   fontSize: 9,
                   fontWeight: FontWeight.w500,
                 ),
@@ -431,7 +454,7 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
 
   Widget buildModernHeader() {
     final activeDevices = widget.devices.where((d) => d.isActive).length;
-    
+
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(24),
@@ -446,10 +469,7 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
           ],
         ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: orangeAccent.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: orangeAccent.withOpacity(0.3), width: 1),
         boxShadow: [
           BoxShadow(
             color: orangeAccent.withOpacity(0.1),
@@ -477,7 +497,11 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
                     ),
                   ],
                 ),
-                child: const Icon(Icons.dashboard_rounded, color: Colors.white, size: 28),
+                child: const Icon(
+                  Icons.dashboard_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
               ),
               const SizedBox(width: 20),
               const Expanded(
@@ -559,7 +583,9 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: darkSurfaceVariant.withOpacity(0.3 + (isPulsing ? pulseValue * 0.1 : 0)),
+        color: darkSurfaceVariant.withOpacity(
+          0.3 + (isPulsing ? pulseValue * 0.1 : 0),
+        ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: color.withOpacity(0.4 + (isPulsing ? pulseValue * 0.2 : 0)),
@@ -613,16 +639,14 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: isExpanded
-                  ? [
-                      darkSurface,
-                      darkSurfaceVariant.withOpacity(0.8),
-                      darkBackground,
-                    ]
-                  : [
-                      darkSurface,
-                      darkSurfaceVariant,
-                    ],
+              colors:
+                  isExpanded
+                      ? [
+                        darkSurface,
+                        darkSurfaceVariant.withOpacity(0.8),
+                        darkBackground,
+                      ]
+                      : [darkSurface, darkSurfaceVariant],
             ),
             border: Border.all(
               color: deviceColor.withOpacity(isExpanded ? 0.5 : 0.3),
@@ -633,8 +657,12 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
             children: [
               InkWell(
                 borderRadius: BorderRadius.circular(20),
-                onTap: () => setState(() => 
-                    expandedDeviceId = isExpanded ? null : device.deviceId),
+                onTap:
+                    () => setState(
+                      () =>
+                          expandedDeviceId =
+                              isExpanded ? null : device.deviceId,
+                    ),
                 onLongPress: () => showDeviceDetails(device),
                 child: Padding(
                   padding: const EdgeInsets.all(20),
@@ -660,7 +688,9 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
                           alignment: Alignment.center,
                           children: [
                             Icon(
-                              device.isActive ? Icons.smartphone : Icons.smartphone_outlined,
+                              device.isActive
+                                  ? Icons.smartphone
+                                  : Icons.smartphone_outlined,
                               color: Colors.white,
                               size: 28,
                             ),
@@ -675,14 +705,23 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
                                       width: 12 + (pulseController.value * 2),
                                       height: 12 + (pulseController.value * 2),
                                       decoration: BoxDecoration(
-                                        color: latestLocation != null ? Colors.green : Colors.orange,
+                                        color:
+                                            latestLocation != null
+                                                ? Colors.green
+                                                : Colors.orange,
                                         shape: BoxShape.circle,
-                                        border: Border.all(color: Colors.white, width: 2),
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 2,
+                                        ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: (latestLocation != null ? Colors.green : Colors.orange)
+                                            color: (latestLocation != null
+                                                    ? Colors.green
+                                                    : Colors.orange)
                                                 .withOpacity(0.6),
-                                            blurRadius: 6 + (pulseController.value * 3),
+                                            blurRadius:
+                                                6 + (pulseController.value * 3),
                                           ),
                                         ],
                                       ),
@@ -713,13 +752,18 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
                                 buildModernStatusChip(device, latestLocation),
                                 const Spacer(),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: darkSurfaceVariant.withOpacity(0.5),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    DeviceUtils.formatDateSmart(device.createdAt),
+                                    DeviceUtils.formatDateSmart(
+                                      device.createdAt,
+                                    ),
                                     style: const TextStyle(
                                       color: darkOnSurfaceVariant,
                                       fontWeight: FontWeight.w500,
@@ -755,9 +799,14 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
               ),
               AnimatedSize(
                 duration: const Duration(milliseconds: 300),
-                child: isExpanded
-                    ? buildModernExpandedContent(device, latestLocation, locations)
-                    : const SizedBox.shrink(),
+                child:
+                    isExpanded
+                        ? buildModernExpandedContent(
+                          device,
+                          latestLocation,
+                          locations,
+                        )
+                        : const SizedBox.shrink(),
               ),
             ],
           ),
@@ -839,7 +888,7 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
                 children: [
                   buildInfoColumn(
                     'Last Seen',
-                    DeviceUtils.formatDateSmart(latestLocation.createdAt),
+                    DeviceUtils.formatDateSmart(latestLocation.timestamp),
                     Icons.access_time,
                     orangeAccent,
                   ),
@@ -884,10 +933,7 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
         const SizedBox(height: 8),
         Text(
           label,
-          style: const TextStyle(
-            color: darkOnSurfaceVariant,
-            fontSize: 12,
-          ),
+          style: const TextStyle(color: darkOnSurfaceVariant, fontSize: 12),
         ),
         const SizedBox(height: 2),
         Text(
@@ -917,10 +963,7 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [
-                color.withOpacity(0.2),
-                color.withOpacity(0.1),
-              ],
+              colors: [color.withOpacity(0.2), color.withOpacity(0.1)],
             ),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: color.withOpacity(0.4)),
@@ -955,7 +998,7 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
     Color chipColor;
     String text;
     IconData icon;
-    
+
     if (device.isActive && latestLocation != null) {
       chipColor = Colors.green;
       text = 'Online';
@@ -974,10 +1017,7 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            chipColor.withOpacity(0.2),
-            chipColor.withOpacity(0.1),
-          ],
+          colors: [chipColor.withOpacity(0.2), chipColor.withOpacity(0.1)],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: chipColor.withOpacity(0.4)),
@@ -1044,10 +1084,7 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
             const SizedBox(height: 8),
             const Text(
               'Add your first device to start tracking',
-              style: TextStyle(
-                color: darkOnSurfaceVariant,
-                fontSize: 16,
-              ),
+              style: TextStyle(color: darkOnSurfaceVariant, fontSize: 16),
             ),
             const SizedBox(height: 32),
             ElevatedButton.icon(
@@ -1057,7 +1094,10 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
               style: ElevatedButton.styleFrom(
                 backgroundColor: orangeAccent,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -1080,183 +1120,211 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.75,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              darkBackground,
-              darkSurface,
-            ],
-          ),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 20,
-              offset: Offset(0, -5),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 50,
-              height: 5,
-              margin: const EdgeInsets.only(top: 12),
-              decoration: BoxDecoration(
-                color: darkOnSurfaceVariant.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(3),
+      builder:
+          (context) => Container(
+            height: MediaQuery.of(context).size.height * 0.75,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [darkBackground, darkSurface],
               ),
-            ),
-            Container(
-              margin: const EdgeInsets.all(24),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    darkSurface,
-                    darkSurfaceVariant.withOpacity(0.8),
-                  ],
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 20,
+                  offset: Offset(0, -5),
                 ),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: deviceColor.withOpacity(0.4)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 70,
-                    height: 70,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [deviceColor, deviceColor.withOpacity(0.8)],
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: deviceColor.withOpacity(0.4),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Container(
+                  width: 50,
+                  height: 5,
+                  margin: const EdgeInsets.only(top: 12),
+                  decoration: BoxDecoration(
+                    color: darkOnSurfaceVariant.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                Container(
+                  margin: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        darkSurface,
+                        darkSurfaceVariant.withOpacity(0.8),
                       ],
                     ),
-                    child: Icon(
-                      device.isActive ? Icons.smartphone : Icons.smartphone_outlined,
-                      color: Colors.white,
-                      size: 32,
-                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: deviceColor.withOpacity(0.4)),
                   ),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          device.deviceName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: darkOnSurface,
-                            fontSize: 20,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 70,
+                        height: 70,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [deviceColor, deviceColor.withOpacity(0.8)],
                           ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: deviceColor.withOpacity(0.4),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: darkSurfaceVariant,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            'ID: ${device.deviceId}',
-                            style: const TextStyle(
-                              fontFamily: 'monospace',
-                              color: darkOnSurfaceVariant,
-                              fontSize: 12,
+                        child: Icon(
+                          device.isActive
+                              ? Icons.smartphone
+                              : Icons.smartphone_outlined,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              device.deviceName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: darkOnSurface,
+                                fontSize: 20,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: darkSurfaceVariant,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'ID: ${device.deviceId}',
+                                style: const TextStyle(
+                                  fontFamily: 'monospace',
+                                  color: darkOnSurfaceVariant,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close, color: darkOnSurface),
+                        style: IconButton.styleFrom(
+                          backgroundColor: darkSurfaceVariant.withOpacity(0.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            widget.onCenterMapOnDevice(device.deviceId);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
                             ),
                           ),
+                          icon: const Icon(Icons.center_focus_strong),
+                          label: const Text('Center on Map'),
                         ),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          widget.onDeleteDevice(device);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        icon: const Icon(Icons.delete_outline),
+                        label: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: [
+                        buildInfoCard('Device Status', [
+                          buildInfoRow(
+                            'Status',
+                            device.isActive ? 'Active' : 'Inactive',
+                            device.isActive ? Colors.green : Colors.grey,
+                          ),
+                          buildInfoRow(
+                            'Added',
+                            DeviceUtils.formatDateSmart(device.createdAt),
+                            null,
+                          ),
+                        ]),
+                        if (latestLocation != null) ...[
+                          const SizedBox(height: 20),
+                          buildInfoCard('Location Data', [
+                            buildInfoRow(
+                              'Last Update',
+                              DeviceUtils.formatDateSmart(
+                                latestLocation.timestamp,
+                              ),
+                              null,
+                            ),
+                            if (latestLocation.speed != null)
+                              buildInfoRow(
+                                'Speed',
+                                DeviceUtils.formatSpeed(latestLocation.speed!),
+                                DeviceUtils.getSpeedColor(latestLocation.speed),
+                              ),
+                            buildInfoRow(
+                              'History Points',
+                              '${locations.length}',
+                              null,
+                            ),
+                          ]),
+                        ],
                       ],
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close, color: darkOnSurface),
-                    style: IconButton.styleFrom(
-                      backgroundColor: darkSurfaceVariant.withOpacity(0.5),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        widget.onCenterMapOnDevice(device.deviceId);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      icon: const Icon(Icons.center_focus_strong),
-                      label: const Text('Center on Map'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      widget.onDeleteDevice(device);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    icon: const Icon(Icons.delete_outline),
-                    label: const Text('Delete'),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  children: [
-                    buildInfoCard('Device Status', [
-                      buildInfoRow('Status', device.isActive ? 'Active' : 'Inactive', device.isActive ? Colors.green : Colors.grey),
-                      buildInfoRow('Added', DeviceUtils.formatDateSmart(device.createdAt), null),
-                    ]),
-                    if (latestLocation != null) ...[
-                      const SizedBox(height: 20),
-                      buildInfoCard('Location Data', [
-                        buildInfoRow('Last Update', DeviceUtils.formatDateSmart(latestLocation.createdAt), null),
-                        if (latestLocation.speed != null)
-                          buildInfoRow('Speed', DeviceUtils.formatSpeed(latestLocation.speed!), DeviceUtils.getSpeedColor(latestLocation.speed)),
-                        buildInfoRow('History Points', '${locations.length}', null),
-                      ]),
-                    ],
-                  ],
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -1272,9 +1340,7 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
           ],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: darkOnSurfaceVariant.withOpacity(0.3),
-        ),
+        border: Border.all(color: darkOnSurfaceVariant.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1302,10 +1368,7 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
         children: [
           Text(
             label,
-            style: const TextStyle(
-              color: darkOnSurfaceVariant,
-              fontSize: 14,
-            ),
+            style: const TextStyle(color: darkOnSurfaceVariant, fontSize: 14),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1332,276 +1395,303 @@ class _DeviceListWidgetState extends State<DeviceListWidget>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.85,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              darkBackground,
-              darkSurface,
-            ],
-          ),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 20,
-              offset: Offset(0, -5),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 50,
-              height: 5,
-              margin: const EdgeInsets.only(top: 12),
-              decoration: BoxDecoration(
-                color: darkOnSurfaceVariant.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(3),
+      builder:
+          (context) => Container(
+            height: MediaQuery.of(context).size.height * 0.85,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [darkBackground, darkSurface],
               ),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 20,
+                  offset: Offset(0, -5),
+                ),
+              ],
             ),
-            Container(
-              margin: const EdgeInsets.all(24),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    darkSurface,
-                    darkSurfaceVariant.withOpacity(0.8),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: orangeAccent.withOpacity(0.4),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          orangeAccent,
-                          orangeAccent.withOpacity(0.8),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(Icons.list_rounded, color: Colors.white, size: 28),
+            child: Column(
+              children: [
+                Container(
+                  width: 50,
+                  height: 5,
+                  margin: const EdgeInsets.only(top: 12),
+                  decoration: BoxDecoration(
+                    color: darkOnSurfaceVariant.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(3),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'All Connected Devices',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: darkOnSurface,
-                            fontSize: 20,
-                          ),
-                        ),
-                        Text(
-                          '${widget.devices.length} devices registered',
-                          style: const TextStyle(
-                            color: darkOnSurfaceVariant,
-                            fontSize: 14,
-                          ),
-                        ),
+                ),
+                Container(
+                  margin: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        darkSurface,
+                        darkSurfaceVariant.withOpacity(0.8),
                       ],
                     ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: orangeAccent.withOpacity(0.4)),
                   ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close, color: darkOnSurface),
-                    style: IconButton.styleFrom(
-                      backgroundColor: darkSurfaceVariant.withOpacity(0.5),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                itemCount: widget.devices.length,
-                itemBuilder: (context, index) {
-                  final device = widget.devices[index];
-                  final locations = widget.deviceLocations[device.deviceId] ?? [];
-                  final latestLocation = locations.isNotEmpty ? locations.first : null;
-                  final deviceColor = DeviceUtils.getDeviceColor(device.deviceId);
-                  
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    child: Material(
-                      elevation: 2,
-                      borderRadius: BorderRadius.circular(16),
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.pop(context);
-                          showDeviceDetails(device);
-                        },
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                darkSurface,
-                                darkSurfaceVariant.withOpacity(0.8),
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: deviceColor.withOpacity(0.3),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 50,
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [deviceColor, deviceColor.withOpacity(0.8)],
-                                  ),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: deviceColor.withOpacity(0.3),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Icon(
-                                  device.isActive ? Icons.smartphone : Icons.smartphone_outlined,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      device.deviceName,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: darkOnSurface,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Row(
-                                      children: [
-                                        buildModernStatusChip(device, latestLocation),
-                                        const Spacer(),
-                                        if (latestLocation != null)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: darkSurfaceVariant.withOpacity(0.5),
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              DeviceUtils.formatDateSmart(latestLocation.createdAt),
-                                              style: const TextStyle(
-                                                color: darkOnSurfaceVariant,
-                                                fontWeight: FontWeight.w500,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: deviceColor.withOpacity(0.2),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.arrow_forward_ios,
-                                  size: 16,
-                                  color: deviceColor,
-                                ),
-                              ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              orangeAccent,
+                              orangeAccent.withOpacity(0.8),
                             ],
                           ),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.list_rounded,
+                          color: Colors.white,
+                          size: 28,
                         ),
                       ),
-                    ),
-                  );
-                },
-              ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'All Connected Devices',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: darkOnSurface,
+                                fontSize: 20,
+                              ),
+                            ),
+                            Text(
+                              '${widget.devices.length} devices registered',
+                              style: const TextStyle(
+                                color: darkOnSurfaceVariant,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close, color: darkOnSurface),
+                        style: IconButton.styleFrom(
+                          backgroundColor: darkSurfaceVariant.withOpacity(0.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    itemCount: widget.devices.length,
+                    itemBuilder: (context, index) {
+                      final device = widget.devices[index];
+                      final locations =
+                          widget.deviceLocations[device.deviceId] ?? [];
+                      final latestLocation =
+                          locations.isNotEmpty ? locations.first : null;
+                      final deviceColor = DeviceUtils.getDeviceColor(
+                        device.deviceId,
+                      );
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        child: Material(
+                          elevation: 2,
+                          borderRadius: BorderRadius.circular(16),
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.pop(context);
+                              showDeviceDetails(device);
+                            },
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    darkSurface,
+                                    darkSurfaceVariant.withOpacity(0.8),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: deviceColor.withOpacity(0.3),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 50,
+                                    height: 50,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          deviceColor,
+                                          deviceColor.withOpacity(0.8),
+                                        ],
+                                      ),
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: deviceColor.withOpacity(0.3),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Icon(
+                                      device.isActive
+                                          ? Icons.smartphone
+                                          : Icons.smartphone_outlined,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          device.deviceName,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: darkOnSurface,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Row(
+                                          children: [
+                                            buildModernStatusChip(
+                                              device,
+                                              latestLocation,
+                                            ),
+                                            const Spacer(),
+                                            if (latestLocation != null)
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: darkSurfaceVariant
+                                                      .withOpacity(0.5),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                child: Text(
+                                                  DeviceUtils.formatDateSmart(
+                                                    latestLocation.timestamp,
+                                                  ),
+                                                  style: const TextStyle(
+                                                    color: darkOnSurfaceVariant,
+                                                    fontWeight: FontWeight.w500,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: deviceColor.withOpacity(0.2),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.arrow_forward_ios,
+                                      size: 16,
+                                      color: deviceColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
   void confirmDelete(Device device) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: darkSurface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.2),
-                shape: BoxShape.circle,
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: darkSurface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.warning, color: Colors.red, size: 24),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Delete Device',
+                  style: TextStyle(color: darkOnSurface),
+                ),
+              ],
+            ),
+            content: Text(
+              'Are you sure you want to delete "${device.deviceName}"? This action cannot be undone.',
+              style: const TextStyle(color: darkOnSurfaceVariant),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: darkOnSurfaceVariant),
+                ),
               ),
-              child: const Icon(Icons.warning, color: Colors.red, size: 24),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Delete Device',
-              style: TextStyle(color: darkOnSurface),
-            ),
-          ],
-        ),
-        content: Text(
-          'Are you sure you want to delete "${device.deviceName}"? This action cannot be undone.',
-          style: const TextStyle(color: darkOnSurfaceVariant),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: darkOnSurfaceVariant)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              widget.onDeleteDevice(device);
-              setState(() => expandedDeviceId = null);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  widget.onDeleteDevice(device);
+                  setState(() => expandedDeviceId = null);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Delete'),
               ),
-            ),
-            child: const Text('Delete'),
+            ],
           ),
-        ],
-      ),
     );
   }
 }

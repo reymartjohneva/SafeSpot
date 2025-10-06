@@ -95,11 +95,7 @@ class DeviceInfoPopup extends StatelessWidget {
             ),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(
-            Icons.smartphone,
-            size: 14,
-            color: Colors.white,
-          ),
+          child: const Icon(Icons.smartphone, size: 14, color: Colors.white),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -133,7 +129,7 @@ class DeviceInfoPopup extends StatelessWidget {
     List<Widget> items = [
       _buildCompactInfoRow(
         Icons.access_time_filled,
-        DeviceUtils.formatDateSmart(latestLocation.createdAt),
+        DeviceUtils.formatDateSmart(latestLocation.timestamp),
         context,
       ),
       const SizedBox(height: 4),
@@ -152,17 +148,14 @@ class DeviceInfoPopup extends StatelessWidget {
     }
 
     items.addAll([
-      _buildCompactInfoRow(
-        Icons.timeline,
-        '$locationCount pts',
-        context,
-      ),
+      _buildCompactInfoRow(Icons.timeline, '$locationCount pts', context),
       const SizedBox(height: 4),
       _buildCompactInfoRow(
         Icons.radio_button_checked,
         device.isActive ? 'Active' : 'Inactive',
         context,
-        valueColor: device.isActive ? Colors.green.shade600 : Colors.orange.shade600,
+        valueColor:
+            device.isActive ? Colors.green.shade600 : Colors.orange.shade600,
       ),
     ]);
 
@@ -196,7 +189,9 @@ class DeviceInfoPopup extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: (valueColor ?? theme.colorScheme.onSurface).withOpacity(0.08),
+              color: (valueColor ?? theme.colorScheme.onSurface).withOpacity(
+                0.08,
+              ),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(

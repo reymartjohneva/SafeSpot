@@ -17,6 +17,7 @@ class MapLayers extends StatelessWidget {
   final String? selectedDeviceId;
   final Device? Function(String) findDeviceById;
   final Function(String?) onDeviceSelected;
+  final bool showHistoryPoints; // NEW
 
   const MapLayers({
     Key? key,
@@ -30,6 +31,7 @@ class MapLayers extends StatelessWidget {
     required this.selectedDeviceId,
     required this.findDeviceById,
     required this.onDeviceSelected,
+    required this.showHistoryPoints, // NEW
   }) : super(key: key);
 
   @override
@@ -58,10 +60,11 @@ class MapLayers extends StatelessWidget {
           polylines: _buildDevicePolylines(),
         ),
 
-        // Historical device markers
-        MarkerLayer(
-          markers: _buildHistoricalDeviceMarkers(),
-        ),
+        // Historical device markers - ONLY SHOW IF showHistoryPoints IS TRUE
+        if (showHistoryPoints)
+          MarkerLayer(
+            markers: _buildHistoricalDeviceMarkers(),
+          ),
 
         // Current user location accuracy circle
         if (currentPosition != null)
@@ -85,7 +88,6 @@ class MapLayers extends StatelessWidget {
 
   List<Polygon> _buildGeofencePolygons() {
     return [
-      // Existing geofences
       ...geofences.map(
         (geofence) => Polygon(
           points: geofence.points,
@@ -94,7 +96,6 @@ class MapLayers extends StatelessWidget {
           borderStrokeWidth: 2.0,
         ),
       ),
-      // Current drawing geofence
       if (currentGeofencePoints.length >= 3)
         Polygon(
           points: currentGeofencePoints,

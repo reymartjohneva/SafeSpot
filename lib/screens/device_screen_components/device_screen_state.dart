@@ -48,6 +48,9 @@ class DeviceScreenStateData {
   Timer? refreshTimer;
   static const Duration refreshInterval = Duration(seconds: 30);
 
+  // NEW: History points visibility state
+  bool showHistoryPoints = true;
+
   void dispose() {
     refreshTimer?.cancel();
     deviceIdController.dispose();

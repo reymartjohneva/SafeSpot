@@ -30,6 +30,9 @@ class DeviceScreenUI {
     required Future<void> Function() onLoadGeofences,
     required Future<void> Function(String, bool) onToggleGeofenceStatus,
     required Future<void> Function(String, int) onDeleteGeofence,
+    // NEW: History points visibility parameters
+    required bool showHistoryPoints,
+    required VoidCallback onToggleHistoryPoints,
   }) {
     if (!DeviceService.isAuthenticated) {
       return _buildUnauthenticatedScreen();
@@ -64,6 +67,9 @@ class DeviceScreenUI {
             onLoadGeofences: onLoadGeofences,
             onToggleGeofenceStatus: onToggleGeofenceStatus,
             onDeleteGeofence: onDeleteGeofence,
+            // NEW: Pass history points visibility
+            showHistoryPoints: showHistoryPoints,
+            onToggleHistoryPoints: onToggleHistoryPoints,
           ),
         ],
       ),
@@ -245,6 +251,9 @@ class DeviceScreenUI {
     required Future<void> Function() onLoadGeofences,
     required Future<void> Function(String, bool) onToggleGeofenceStatus,
     required Future<void> Function(String, int) onDeleteGeofence,
+    // NEW: History points visibility parameters
+    required bool showHistoryPoints,
+    required VoidCallback onToggleHistoryPoints,
   }) {
     return DeviceMapWidget(
       mapController: mapController,
@@ -270,6 +279,9 @@ class DeviceScreenUI {
       onLoadGeofences: onLoadGeofences,
       onToggleGeofenceStatus: onToggleGeofenceStatus,
       onDeleteGeofence: onDeleteGeofence,
+      // NEW: Pass history points visibility to map widget
+      showHistoryPoints: showHistoryPoints,
+      onToggleHistoryPoints: onToggleHistoryPoints,
     );
   }
 

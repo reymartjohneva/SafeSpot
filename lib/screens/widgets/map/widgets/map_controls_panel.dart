@@ -23,6 +23,10 @@ class MapControlsPanel extends StatelessWidget {
   final VoidCallback onLoadGeofences;
   final Future<void> Function(String, bool) onToggleGeofenceStatus;
   final Future<void> Function(String, int) onDeleteGeofence;
+  
+  // NEW: History points visibility
+  final bool showHistoryPoints;
+  final VoidCallback onToggleHistoryPoints;
 
   const MapControlsPanel({
     Key? key,
@@ -42,6 +46,8 @@ class MapControlsPanel extends StatelessWidget {
     required this.onLoadGeofences,
     required this.onToggleGeofenceStatus,
     required this.onDeleteGeofence,
+    required this.showHistoryPoints,
+    required this.onToggleHistoryPoints,
   }) : super(key: key);
 
   @override
@@ -109,6 +115,30 @@ class MapControlsPanel extends StatelessWidget {
                   tooltip: 'Clear',
                 ),
               ],
+              
+              const SizedBox(height: 8),
+              
+              // Thin divider
+              Container(
+                height: 0.5,
+                width: 20,
+                color: Colors.grey.shade300,
+              ),
+              
+              const SizedBox(height: 8),
+              
+              // NEW: History Points Toggle Button
+              _buildCompactButton(
+                icon: showHistoryPoints ? Icons.visibility : Icons.visibility_off,
+                onPressed: onToggleHistoryPoints,
+                backgroundColor: showHistoryPoints 
+                    ? Colors.amber.shade50 
+                    : Colors.grey.shade100,
+                iconColor: showHistoryPoints 
+                    ? Colors.amber.shade700 
+                    : Colors.grey.shade500,
+                tooltip: showHistoryPoints ? 'Hide History' : 'Show History',
+              ),
               
               const SizedBox(height: 8),
               
@@ -261,7 +291,6 @@ class MapControlsPanel extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Compact handle
                 Center(
                   child: Container(
                     width: 32,
@@ -273,8 +302,6 @@ class MapControlsPanel extends StatelessWidget {
                     ),
                   ),
                 ),
-                
-                // Compact header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -311,8 +338,6 @@ class MapControlsPanel extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                
-                // Compact geofences list
                 Expanded(
                   child: geofences.isEmpty
                       ? _buildEmptyGeofenceState(context)

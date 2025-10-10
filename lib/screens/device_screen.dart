@@ -93,6 +93,13 @@ class _DeviceScreenState extends State<DeviceScreen>
       onLoadGeofences: loadGeofences,
       onToggleGeofenceStatus: toggleGeofenceStatus,
       onDeleteGeofence: deleteGeofence,
+      // NEW: Add history points visibility toggle
+      showHistoryPoints: state.showHistoryPoints,
+      onToggleHistoryPoints: () {
+        setState(() {
+          state.showHistoryPoints = !state.showHistoryPoints;
+        });
+      },
     );
   }
 }

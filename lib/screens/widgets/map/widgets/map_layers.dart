@@ -17,7 +17,7 @@ class MapLayers extends StatelessWidget {
   final String? selectedDeviceId;
   final Device? Function(String) findDeviceById;
   final Function(String?) onDeviceSelected;
-  final bool showHistoryPoints; // NEW
+  final bool showHistoryPoints;
 
   const MapLayers({
     Key? key,
@@ -31,7 +31,7 @@ class MapLayers extends StatelessWidget {
     required this.selectedDeviceId,
     required this.findDeviceById,
     required this.onDeviceSelected,
-    required this.showHistoryPoints, // NEW
+    required this.showHistoryPoints,
   }) : super(key: key);
 
   @override
@@ -88,21 +88,23 @@ class MapLayers extends StatelessWidget {
 
   List<Polygon> _buildGeofencePolygons() {
     return [
+      // CHANGED: All existing geofences now display in GREEN
       ...geofences.map(
         (geofence) => Polygon(
           points: geofence.points,
-          color: geofence.color.withOpacity(0.2),
-          borderColor: geofence.color,
+          color: Colors.green.withOpacity(0.2), // Always green
+          borderColor: Colors.green.shade600,    // Always green
           borderStrokeWidth: 2.0,
         ),
       ),
+      // Current drawing geofence - also green
       if (currentGeofencePoints.length >= 3)
         Polygon(
           points: currentGeofencePoints,
-          color: Colors.orange.withOpacity(0.2),
+          color: Colors.green.withOpacity(0.2),
           borderColor: isDragging
-              ? Colors.orange.shade700
-              : Colors.orange,
+              ? Colors.green.shade700
+              : Colors.green.shade600,
           borderStrokeWidth: isDragging ? 3.0 : 2.0,
         ),
     ];
@@ -122,8 +124,8 @@ class MapLayers extends StatelessWidget {
               height: draggedPointIndex == entry.key ? 28 : 24,
               decoration: BoxDecoration(
                 color: draggedPointIndex == entry.key
-                    ? Colors.orange.shade700
-                    : Colors.orange,
+                    ? Colors.green.shade700
+                    : Colors.green.shade600,
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: Colors.white,
@@ -132,7 +134,7 @@ class MapLayers extends StatelessWidget {
                 boxShadow: [
                   if (draggedPointIndex == entry.key)
                     BoxShadow(
-                      color: Colors.orange.withOpacity(0.5),
+                      color: Colors.green.withOpacity(0.5),
                       blurRadius: 8,
                       spreadRadius: 2,
                     ),
@@ -160,8 +162,8 @@ class MapLayers extends StatelessWidget {
         points: currentGeofencePoints,
         strokeWidth: isDragging ? 3.0 : 2.0,
         color: (isDragging
-                ? Colors.orange.shade700
-                : Colors.orange)
+                ? Colors.green.shade700
+                : Colors.green.shade600)
             .withOpacity(0.8),
       ),
     ];

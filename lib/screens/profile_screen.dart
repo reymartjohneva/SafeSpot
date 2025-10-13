@@ -1,11 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:safe_spot/services/auth_service.dart';
-import 'package:safe_spot/services/device_service.dart';
-import 'package:safe_spot/services/child_info_service.dart';
-import 'package:safe_spot/models/user_profile.dart';
-import 'package:safe_spot/models/child_info.dart';
-import 'package:safe_spot/screens/edit_profile_screen.dart';
-import 'package:safe_spot/screens/edit_child_info_screen.dart';
 import 'profile_tabs/profile_tab.dart';
 import 'profile_tabs/children_tab.dart';
 import 'profile_mixins/profile_data_mixin.dart';

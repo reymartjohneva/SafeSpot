@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:safe_spot/services/auth_service.dart';
 import 'package:safe_spot/models/user_profile.dart';
 
 class ImagePickerBottomSheet extends StatelessWidget {

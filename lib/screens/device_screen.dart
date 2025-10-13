@@ -1,14 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
-import 'package:geolocator/geolocator.dart';
-import 'dart:async';
-import 'package:safe_spot/services/device_service.dart';
-import 'package:safe_spot/services/geofence_service.dart';
-import 'package:safe_spot/screens/widgets/device_list_widget.dart';
-import 'package:safe_spot/screens/widgets/map/device_map_widget.dart';
-import 'package:safe_spot/screens/widgets/device_stats_widget.dart';
-import 'package:safe_spot/utils/device_utils.dart';
 import 'package:safe_spot/screens/device_screen_components/device_screen_state.dart';
 import 'package:safe_spot/screens/device_screen_components/device_screen_location_mixin.dart';
 import 'package:safe_spot/screens/device_screen_components/device_screen_device_mixin.dart';

@@ -5,6 +5,7 @@ import 'screens/device_screen.dart';
 import 'pages/registration_page.dart';
 import 'services/auth_service.dart';
 import 'services/firebase_sync_service.dart';
+import 'services/geofence_monitor_service.dart';
 import 'screens/profile_screen.dart';
 import 'widgets/nav_bar.dart';
 import 'screens/emergency_hotlines_screen.dart';
@@ -174,12 +175,25 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
+
+    // Initialize geofence monitoring service
+    _initializeGeofenceMonitoring();
+  }
+
+  Future<void> _initializeGeofenceMonitoring() async {
+    try {
+      await GeofenceMonitorService.initialize();
+      print('✅ Geofence monitoring started');
+    } catch (e) {
+      print('❌ Failed to start geofence monitoring: $e');
+    }
   }
 
   @override
   void dispose() {
     _pageController.dispose();
     _animationController.dispose();
+    GeofenceMonitorService.dispose(); // Cleanup geofence monitoring
     super.dispose();
   }
 

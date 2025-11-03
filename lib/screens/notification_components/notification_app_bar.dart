@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:safe_spot/screens/notification_components/notification_colors.dart';
-import 'package:safe_spot/screens/app_guide_screen.dart';
 
 class NotificationAppBar extends StatelessWidget implements PreferredSizeWidget {
   final int unreadCount;
@@ -119,31 +118,6 @@ class NotificationAppBar extends StatelessWidget implements PreferredSizeWidget 
         ),
       ),
       actions: [
-        // How to Use button
-        Container(
-          margin: const EdgeInsets.only(right: 8),
-          decoration: BoxDecoration(
-            color: NotificationColors.surfaceColor,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: IconButton(
-            icon: const Icon(
-              Icons.help_outline_rounded,
-              color: Color(0xFFFF8A50),
-              size: 24,
-            ),
-            tooltip: 'How to Use',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AppGuideScreen(),
-                ),
-              );
-            },
-          ),
-        ),
-        // Menu button
         Container(
           margin: const EdgeInsets.only(right: 8),
           decoration: BoxDecoration(

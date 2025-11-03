@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:safe_spot/screens/notification_components/notification_colors.dart';
+import 'package:safe_spot/screens/app_guide_screen.dart';
 
 class NotificationAppBar extends StatelessWidget implements PreferredSizeWidget {
   final int unreadCount;
@@ -14,7 +15,7 @@ class NotificationAppBar extends StatelessWidget implements PreferredSizeWidget 
   }) : super(key: key);
 
   @override
-  Size get preferredSize => const Size.fromHeight(80); // Match device UI height
+  Size get preferredSize => const Size.fromHeight(80);
 
   @override
   Widget build(BuildContext context) {
@@ -22,12 +23,11 @@ class NotificationAppBar extends StatelessWidget implements PreferredSizeWidget 
       elevation: 0,
       backgroundColor: NotificationColors.darkBackground,
       surfaceTintColor: NotificationColors.darkBackground,
-      toolbarHeight: 80, // Increased height for better spacing
+      toolbarHeight: 80,
       title: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
-            // App Logo with enhanced styling matching device UI
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -60,9 +60,7 @@ class NotificationAppBar extends StatelessWidget implements PreferredSizeWidget 
                 },
               ),
             ),
-            const SizedBox(width: 16), // Increased spacing
-            
-            // Title with gradient effect
+            const SizedBox(width: 16),
             Expanded(
               child: Row(
                 children: [
@@ -121,6 +119,31 @@ class NotificationAppBar extends StatelessWidget implements PreferredSizeWidget 
         ),
       ),
       actions: [
+        // How to Use button
+        Container(
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            color: NotificationColors.surfaceColor,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: IconButton(
+            icon: const Icon(
+              Icons.help_outline_rounded,
+              color: Color(0xFFFF8A50),
+              size: 24,
+            ),
+            tooltip: 'How to Use',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AppGuideScreen(),
+                ),
+              );
+            },
+          ),
+        ),
+        // Menu button
         Container(
           margin: const EdgeInsets.only(right: 8),
           decoration: BoxDecoration(

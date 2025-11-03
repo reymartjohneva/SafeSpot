@@ -5,6 +5,7 @@ import 'package:safe_spot/screens/emergency_components/section_header.dart';
 import 'package:safe_spot/screens/emergency_components/quick_tips_card.dart';
 import 'package:safe_spot/screens/emergency_components/emergency_app_bar.dart';
 import 'package:safe_spot/screens/emergency_components/call_handler.dart';
+import 'package:safe_spot/screens/app_guide_screen.dart';
 
 class EmergencyHotlinesScreen extends StatefulWidget {
   const EmergencyHotlinesScreen({Key? key}) : super(key: key);
@@ -72,6 +73,8 @@ class _EmergencyHotlinesScreenState extends State<EmergencyHotlinesScreen>
                     opacity: _fadeAnimation,
                     child: Column(
                       children: [
+                        _buildAppGuideButton(),
+                        const SizedBox(height: 24),
                         _buildCriticalSection(),
                         const SizedBox(height: 32),
                         _buildGovernmentSection(),
@@ -86,6 +89,100 @@ class _EmergencyHotlinesScreenState extends State<EmergencyHotlinesScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAppGuideButton() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFFFF8A50).withOpacity(0.15),
+            const Color(0xFFFF6B35).withOpacity(0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFFFF8A50).withOpacity(0.3),
+          width: 1.5,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AppGuideScreen(),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFF6B35), Color(0xFFFF9800)],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFF6B35).withOpacity(0.4),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.help_outline_rounded,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'How to Use SafeSpot',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Learn about features, AI predictions & safety tips',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.7),
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Color(0xFFFF8A50),
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

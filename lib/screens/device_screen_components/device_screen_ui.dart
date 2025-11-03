@@ -28,7 +28,6 @@ class DeviceScreenUI {
     required Future<void> Function() onLoadGeofences,
     required Future<void> Function(String, bool) onToggleGeofenceStatus,
     required Future<void> Function(String, int) onDeleteGeofence,
-    // NEW: History points visibility parameters
     required bool showHistoryPoints,
     required VoidCallback onToggleHistoryPoints,
   }) {
@@ -65,7 +64,6 @@ class DeviceScreenUI {
             onLoadGeofences: onLoadGeofences,
             onToggleGeofenceStatus: onToggleGeofenceStatus,
             onDeleteGeofence: onDeleteGeofence,
-            // NEW: Pass history points visibility
             showHistoryPoints: showHistoryPoints,
             onToggleHistoryPoints: onToggleHistoryPoints,
           ),
@@ -116,48 +114,139 @@ class DeviceScreenUI {
       elevation: 0,
       backgroundColor: DeviceScreenColors.darkBackground,
       surfaceTintColor: DeviceScreenColors.darkBackground,
-      title: Row(
-        children: [
-          // App Logo
-          Image.asset(
-            'assets/app1_icon.png',
-            height: 50,
-            width: 50,
-            fit: BoxFit.contain,
-          ),
-          const SizedBox(width: 12),
-          // App Name
-          const Text(
-            'SafeSpot',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w600,
-              color: DeviceScreenColors.textPrimary,
+      toolbarHeight: 80, // Increased height for better spacing
+      title: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            // App Logo with enhanced styling
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFFFF6B35),
+                    Color(0xFFFF9800),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFF6B35).withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Image.asset(
+                'assets/app1_icon.png',
+                height: 40,
+                width: 40,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(
+                    Icons.location_on,
+                    color: Colors.white,
+                    size: 40,
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 16), // Increased spacing
+            
+            // App Name with gradient
+            Expanded(
+              child: ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [
+                    Colors.white,
+                    Color(0xFFFF9800),
+                  ],
+                ).createShader(bounds),
+                child: const Text(
+                  'SafeSpot',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
       bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(48),
+        preferredSize: const Size.fromHeight(64), // Increased height
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
+          margin: const EdgeInsets.fromLTRB(16, 8, 16, 16), // Better margins
           decoration: BoxDecoration(
             color: DeviceScreenColors.surfaceColor,
             borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: TabBar(
             controller: tabController,
             indicator: BoxDecoration(
-              color: DeviceScreenColors.primaryOrange,
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFFFF6B35),
+                  Color(0xFFFF9800),
+                ],
+              ),
               borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFF6B35).withOpacity(0.4),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             indicatorSize: TabBarIndicatorSize.tab,
             dividerColor: Colors.transparent,
             labelColor: Colors.white,
             unselectedLabelColor: DeviceScreenColors.textSecondary,
+            labelStyle: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
+            padding: const EdgeInsets.all(4),
             tabs: const [
-              Tab(text: 'Devices', icon: Icon(Icons.devices)),
-              Tab(text: 'Map View', icon: Icon(Icons.map)),
+              Tab(
+                height: 48,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.devices, size: 20),
+                    SizedBox(width: 8),
+                    Text('Devices'),
+                  ],
+                ),
+              ),
+              Tab(
+                height: 48,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.map, size: 20),
+                    SizedBox(width: 8),
+                    Text('Map View'),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -191,17 +280,40 @@ class DeviceScreenUI {
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: onShowAddDeviceModal,
-            icon: const Icon(Icons.add),
-            label: const Text('Add Device'),
+            icon: const Icon(Icons.add, size: 22),
+            label: const Text(
+              'Add Device',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
-              backgroundColor: DeviceScreenColors.primaryOrange,
+              backgroundColor: Colors.transparent,
               foregroundColor: Colors.white,
-              elevation: 8,
-              shadowColor: DeviceScreenColors.primaryOrange.withOpacity(0.3),
+              elevation: 0,
+              shadowColor: Colors.transparent,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
+            ).copyWith(
+              backgroundColor: MaterialStateProperty.all(Colors.transparent),
+            ),
+          ).decoratedBox(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFF6B35), Color(0xFFFF9800)],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFF6B35).withOpacity(0.4),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
           ),
         ),
@@ -249,7 +361,6 @@ class DeviceScreenUI {
     required Future<void> Function() onLoadGeofences,
     required Future<void> Function(String, bool) onToggleGeofenceStatus,
     required Future<void> Function(String, int) onDeleteGeofence,
-    // NEW: History points visibility parameters
     required bool showHistoryPoints,
     required VoidCallback onToggleHistoryPoints,
   }) {
@@ -277,7 +388,6 @@ class DeviceScreenUI {
       onLoadGeofences: onLoadGeofences,
       onToggleGeofenceStatus: onToggleGeofenceStatus,
       onDeleteGeofence: onDeleteGeofence,
-      // NEW: Pass history points visibility to map widget
       showHistoryPoints: showHistoryPoints,
       onToggleHistoryPoints: onToggleHistoryPoints,
     );
@@ -344,6 +454,16 @@ class DeviceScreenUI {
           ),
         ],
       ),
+    );
+  }
+}
+
+// Extension to add decoratedBox functionality
+extension WidgetExtension on Widget {
+  Widget decoratedBox({required BoxDecoration decoration}) {
+    return DecoratedBox(
+      decoration: decoration,
+      child: this,
     );
   }
 }

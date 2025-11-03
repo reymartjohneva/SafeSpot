@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'custom_input_field.dart';
 import 'custom_password_field.dart';
 import 'login_button.dart';
+import 'forgot_password_dialog.dart';
 
 class LoginForm extends StatefulWidget {
   final TextEditingController emailController;
@@ -51,6 +52,16 @@ class _LoginFormState extends State<LoginForm>
   void dispose() {
     _formController.dispose();
     super.dispose();
+  }
+
+  void _showForgotPasswordDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => ForgotPasswordDialog(
+        initialEmail: widget.emailController.text.trim(),
+      ),
+    );
   }
 
   @override
@@ -172,7 +183,7 @@ class _LoginFormState extends State<LoginForm>
                               color: const Color(0xFFFF6B35).withOpacity(0.1),
                             ),
                             child: TextButton(
-                              onPressed: widget.isLoading ? null : widget.onForgotPassword,
+                              onPressed: widget.isLoading ? null : _showForgotPasswordDialog,
                               style: TextButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16,

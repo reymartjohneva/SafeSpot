@@ -24,13 +24,13 @@ class _RegistrationHeaderState extends State<RegistrationHeader>
     );
     
     _rotateController = AnimationController(
-      duration: const Duration(seconds: 25),
+      duration: const Duration(seconds: 20),
       vsync: this,
     );
     
     _pulseAnimation = Tween<double>(
       begin: 1.0,
-      end: 1.08,
+      end: 1.1,
     ).animate(CurvedAnimation(
       parent: _pulseController,
       curve: Curves.easeInOut,
@@ -58,7 +58,7 @@ class _RegistrationHeaderState extends State<RegistrationHeader>
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 30),
+      margin: const EdgeInsets.only(bottom: 40),
       child: Column(
         children: [
           // Enhanced logo with multiple animation effects
@@ -68,48 +68,48 @@ class _RegistrationHeaderState extends State<RegistrationHeader>
               return Transform.scale(
                 scale: _pulseAnimation.value,
                 child: Transform.rotate(
-                  angle: _rotateAnimation.value * 0.08,
+                  angle: _rotateAnimation.value * 0.1, // Subtle rotation
                   child: Container(
-                    height: 90,
-                    width: 90,
+                    height: 120,
+                    width: 120,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: RadialGradient(
+                      gradient: const RadialGradient(
                         colors: [
-                          Colors.brown.shade300,
-                          Colors.brown.shade600,
-                          Colors.brown.shade800,
+                          Color(0xFFFF6B35),
+                          Color(0xFFFF9800),
+                          Color(0xFFFF6B35),
                         ],
-                        stops: const [0.3, 0.7, 1.0],
+                        stops: [0.3, 0.7, 1.0],
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.brown.withOpacity(0.4),
+                          color: const Color(0xFFFF6B35).withOpacity(0.4),
                           blurRadius: 25,
                           spreadRadius: 8,
                         ),
                         BoxShadow(
-                          color: Colors.brown.withOpacity(0.2),
-                          blurRadius: 35,
-                          spreadRadius: 12,
+                          color: const Color(0xFFFF6B35).withOpacity(0.2),
+                          blurRadius: 40,
+                          spreadRadius: 15,
                         ),
                       ],
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(45),
+                      borderRadius: BorderRadius.circular(60),
                       child: Image.asset(
                         'assets/app1_icon.png',
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               shape: BoxShape.circle,
                               gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: [
-                                  Colors.brown.shade400,
-                                  Colors.brown.shade600,
+                                  Color(0xFFFF6B35),
+                                  Color(0xFFFF9800),
                                 ],
                               ),
                             ),
@@ -117,7 +117,7 @@ class _RegistrationHeaderState extends State<RegistrationHeader>
                               child: Icon(
                                 Icons.location_on,
                                 color: Colors.white,
-                                size: 45,
+                                size: 60,
                               ),
                             ),
                           );
@@ -129,35 +129,35 @@ class _RegistrationHeaderState extends State<RegistrationHeader>
               );
             },
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 25),
 
           // App name with enhanced shadow and gradient
           ShaderMask(
-            shaderCallback: (bounds) => LinearGradient(
+            shaderCallback: (bounds) => const LinearGradient(
               colors: [
                 Colors.white,
-                Colors.brown.shade200,
+                Color(0xFFFF9800),
                 Colors.white,
               ],
-              stops: const [0.0, 0.5, 1.0],
+              stops: [0.0, 0.5, 1.0],
             ).createShader(bounds),
-            child: Text(
+            child: const Text(
               'SafeSpot',
               style: TextStyle(
-                fontSize: 32,
+                fontSize: 42,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
-                letterSpacing: 1.5,
+                letterSpacing: 2.0,
                 shadows: [
                   Shadow(
-                    color: Colors.black.withOpacity(0.5),
-                    offset: const Offset(2, 2),
+                    color: Colors.black54,
+                    offset: Offset(2, 2),
                     blurRadius: 4,
                   ),
                   Shadow(
-                    color: Colors.brown.withOpacity(0.3),
-                    offset: const Offset(0, 0),
-                    blurRadius: 15,
+                    color: Color(0xFFFF6B35),
+                    offset: Offset(0, 0),
+                    blurRadius: 20,
                   ),
                 ],
               ),
@@ -168,22 +168,22 @@ class _RegistrationHeaderState extends State<RegistrationHeader>
           // Enhanced tagline with typing animation effect
           TweenAnimationBuilder<double>(
             tween: Tween<double>(begin: 0, end: 1),
-            duration: const Duration(milliseconds: 2200),
+            duration: const Duration(milliseconds: 2000),
             builder: (context, value, child) {
-              final text = 'Create Your SafeSpot Account';
+              const text = 'Create Your SafeSpot Account';
               final displayText = text.substring(0, (text.length * value).round());
               
               return Text(
                 displayText,
                 style: TextStyle(
-                  fontSize: 17,
+                  fontSize: 18,
                   color: Colors.white.withOpacity(0.95),
                   fontWeight: FontWeight.w400,
-                  letterSpacing: 0.8,
-                  shadows: [
+                  letterSpacing: 1.2,
+                  shadows: const [
                     Shadow(
-                      color: Colors.black.withOpacity(0.3),
-                      offset: const Offset(1, 1),
+                      color: Colors.black38,
+                      offset: Offset(1, 1),
                       blurRadius: 2,
                     ),
                   ],

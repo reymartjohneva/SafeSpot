@@ -198,46 +198,6 @@ class _LoginPageState extends State<LoginPage>
     }
   }
 
-  void _handleForgotPassword() async {
-    String email = _emailController.text.trim();
-
-    if (email.isEmpty) {
-      _showEnhancedSnackBar('Please enter your email address first', const Color(0xFFFF9800));
-      return;
-    }
-
-    if (!AuthService.isValidEmail(email)) {
-      _showEnhancedSnackBar('Please enter a valid email address', const Color(0xFFf44336));
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final AuthResult result = await AuthService.resetPassword(email: email);
-
-      setState(() {
-        _isLoading = false;
-      });
-
-      if (result.success) {
-        _showEnhancedSnackBar(result.message, const Color(0xFF4CAF50));
-      } else {
-        _showEnhancedSnackBar(result.message, const Color(0xFFf44336));
-      }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      _showEnhancedSnackBar(
-        'Failed to send reset email. Please try again.',
-        const Color(0xFFf44336),
-      );
-    }
-  }
-
   void _showEnhancedSnackBar(String message, Color backgroundColor) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -435,7 +395,7 @@ class _LoginPageState extends State<LoginPage>
                                   passwordController: _passwordController,
                                   isLoading: _isLoading,
                                   onLogin: _handleLogin,
-                                  onForgotPassword: _handleForgotPassword,
+                                  onForgotPassword: () {}, // Not used anymore, dialog handles it
                                 ),
                               ),
                             ),

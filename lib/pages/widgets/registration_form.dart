@@ -80,14 +80,13 @@ class _RegistrationFormState extends State<RegistrationForm>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white.withOpacity(0.2),
-                  Colors.white.withOpacity(0.15),
-                  Colors.white.withOpacity(0.1),
+                  const Color(0xFF141414).withOpacity(0.8),
+                  const Color(0xFF0a0a0a).withOpacity(0.7),
                 ],
               ),
               borderRadius: BorderRadius.circular(30),
               border: Border.all(
-                color: Colors.white.withOpacity(0.3),
+                color: const Color(0xFFFF6B35).withOpacity(0.3),
                 width: 2,
               ),
               boxShadow: [
@@ -97,7 +96,7 @@ class _RegistrationFormState extends State<RegistrationForm>
                   offset: const Offset(0, 15),
                 ),
                 BoxShadow(
-                  color: Colors.white.withOpacity(0.1),
+                  color: const Color(0xFFFF6B35).withOpacity(0.1),
                   blurRadius: 10,
                   offset: const Offset(-5, -5),
                 ),
@@ -109,19 +108,19 @@ class _RegistrationFormState extends State<RegistrationForm>
                 // Welcome text with gradient
                 Center(
                   child: ShaderMask(
-                    shaderCallback: (bounds) => LinearGradient(
+                    shaderCallback: (bounds) => const LinearGradient(
                       colors: [
                         Colors.white,
-                        Colors.brown.shade200,
+                        Color(0xFFFF9800),
                       ],
                     ).createShader(bounds),
                     child: const Text(
                       'Join SafeSpot!',
                       style: TextStyle(
-                        fontSize: 26,
+                        fontSize: 28,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
-                        letterSpacing: 1.2,
+                        letterSpacing: 1.5,
                       ),
                     ),
                   ),

@@ -27,6 +27,7 @@ class NotificationAppBar extends StatelessWidget implements PreferredSizeWidget 
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
+            // Logo container
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -60,70 +61,78 @@ class NotificationAppBar extends StatelessWidget implements PreferredSizeWidget 
               ),
             ),
             const SizedBox(width: 16),
+
+            // Title and badge
             Expanded(
-              child: Row(
-                children: [
-                  ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      colors: [
-                        Colors.white,
-                        Color(0xFFFF9800),
-                      ],
-                    ).createShader(bounds),
-                    child: const Text(
-                      'Notifications',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ),
-                  if (unreadCount > 0) ...[
-                    const SizedBox(width: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFFFF6B35),
-                            Color(0xFFFF9800),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFF6B35).withOpacity(0.4),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: ShaderMask(
+                          shaderCallback: (bounds) => const LinearGradient(
+                            colors: [
+                              Colors.white,
+                              Color(0xFFFF9800),
+                            ],
+                          ).createShader(bounds),
+                          child: const Text(
+                            'Notifications',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 1.2,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
-                      ),
-                      child: Text(
-                        '$unreadCount',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
                         ),
                       ),
-                    ),
-                  ],
-                ],
+                      if (unreadCount > 0) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFFFF6B35),
+                                Color(0xFFFF9800),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFFF6B35).withOpacity(0.4),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            '$unreadCount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+                },
               ),
             ),
           ],
         ),
       ),
       actions: [
-        Container(
-          margin: const EdgeInsets.only(right: 8),
-          decoration: BoxDecoration(
-            color: NotificationColors.surfaceColor,
-            borderRadius: BorderRadius.circular(12),
-          ),
+        Padding(
+          padding: const EdgeInsets.only(right: 8),
           child: PopupMenuButton<String>(
             icon: const Icon(
               Icons.more_vert_rounded,

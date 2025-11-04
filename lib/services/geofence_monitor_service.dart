@@ -12,6 +12,12 @@ class GeofenceMonitorService {
   // Key: "deviceId:geofenceId", Value: GeofenceState
   static final Map<String, GeofenceState> _deviceGeofenceStates = {};
 
+  // Set to track which location IDs we've already processed
+  static final Set<String> _processedLocationIds = {};
+
+  // Flag to track if we've done initial load
+  static bool _hasLoadedInitialState = false;
+
   // Stream subscriptions
   static StreamSubscription? _locationSubscription;
   static StreamSubscription? _geofenceSubscription;
@@ -29,6 +35,9 @@ class GeofenceMonitorService {
     }
 
     print('🔄 Initializing Geofence Monitor Service...');
+
+    // Reset the loaded state flag
+    _hasLoadedInitialState = false;
 
     // Load active geofences
     await _loadActiveGeofences();
@@ -77,7 +86,7 @@ class GeofenceMonitorService {
         });
   }
 
-  /// Subscribe to real-time location updates
+  /// Subscribe to real-time location updates (only NEW updates)
   static void _subscribeToLocationUpdates() {
     _locationSubscription?.cancel();
 
@@ -86,15 +95,24 @@ class GeofenceMonitorService {
         .from('devices')
         .select('id, device_id')
         .eq('user_id', currentUserId!)
-        .then((devices) {
+        .then((devices) async {
           if (devices.isEmpty) {
             print('⚠️ No devices found for user');
             return;
           }
 
-          final deviceIds = devices.map((d) => d['device_id']).toList();
+          final deviceIds =
+              devices.map((d) => d['device_id'] as String).toList();
           print('📱 Monitoring ${devices.length} devices for geofence events');
           print('📱 Device IDs: $deviceIds');
+
+          // Load initial state from last known locations
+          await _loadInitialStates(deviceIds);
+
+          // Mark that we've loaded initial state
+          _hasLoadedInitialState = true;
+
+          print('⏰ Starting real-time monitoring');
 
           // Subscribe to location_history changes for user's devices
           _locationSubscription = _client
@@ -102,23 +120,41 @@ class GeofenceMonitorService {
               .stream(primaryKey: ['id'])
               .listen(
                 (data) {
-                  print('📡 Location stream received ${data.length} records');
                   if (data.isEmpty) return;
 
-                  // Process ALL location updates (not just first)
+                  print('📡 Stream update received: ${data.length} records');
+                  print('   Has loaded initial state: $_hasLoadedInitialState');
+                  print(
+                    '   Processed IDs count: ${_processedLocationIds.length}',
+                  );
+
+                  // Process only NEW real-time locations
+                  int newCount = 0;
+                  int skippedCount = 0;
+
                   for (final location in data) {
                     final deviceId = location['device_id'];
-                    if (deviceIds.contains(deviceId)) {
-                      print(
-                        '✅ Processing location for tracked device: $deviceId',
-                      );
-                      _processLocationUpdate(location);
-                    } else {
-                      print(
-                        '⚠️ Skipping location for untracked device: $deviceId',
-                      );
+                    if (!deviceIds.contains(deviceId)) continue;
+
+                    final locationId = location['id'].toString();
+
+                    // Skip if we've already processed this location
+                    if (_processedLocationIds.contains(locationId)) {
+                      skippedCount++;
+                      continue;
                     }
+
+                    // Mark as processed
+                    _processedLocationIds.add(locationId);
+                    newCount++;
+
+                    print(
+                      '🆕 NEW real-time location for $deviceId (ID: $locationId)',
+                    );
+                    _processLocationUpdate(location);
                   }
+
+                  print('   Processed: $newCount new, $skippedCount skipped');
                 },
                 onError: (error) {
                   print('❌ Location stream error: $error');
@@ -128,6 +164,81 @@ class GeofenceMonitorService {
         .catchError((e) {
           print('❌ Error subscribing to location updates: $e');
         });
+  }
+
+  /// Load initial geofence states from the last known location of each device
+  static Future<void> _loadInitialStates(List<String> deviceIds) async {
+    try {
+      print('🔄 Loading initial states for devices...');
+
+      // First, get ALL existing location IDs and mark them as processed
+      // This prevents processing historical data
+      print('🔄 Fetching all existing location IDs to mark as processed...');
+      final allLocations = await _client
+          .from('location_history')
+          .select('id')
+          .inFilter('device_id', deviceIds);
+
+      for (final loc in allLocations) {
+        _processedLocationIds.add(loc['id'].toString());
+      }
+
+      print(
+        '✅ Marked ${_processedLocationIds.length} existing locations as processed',
+      );
+
+      // Now get the latest location per device for initial state
+      for (final deviceId in deviceIds) {
+        final latestLocation =
+            await _client
+                .from('location_history')
+                .select()
+                .eq('device_id', deviceId)
+                .order('timestamp', ascending: false)
+                .limit(1)
+                .maybeSingle();
+
+        if (latestLocation == null) {
+          print('⚠️ No location history found for device: $deviceId');
+          continue;
+        }
+
+        final latitude = (latestLocation['latitude'] as num).toDouble();
+        final longitude = (latestLocation['longitude'] as num).toDouble();
+        final timestamp = DateTime.parse(latestLocation['timestamp'] as String);
+        final locationId = latestLocation['id'].toString();
+        final currentLocation = LatLng(latitude, longitude);
+
+        print(
+          '📍 Last known location for $deviceId: ($latitude, $longitude) at $timestamp (ID: $locationId)',
+        );
+
+        // Check this location against all geofences to establish initial state
+        for (final geofence in _activeGeofences) {
+          final stateKey = '$deviceId:${geofence.id}';
+          final isInside = GeofenceUtils.isPointInPolygon(
+            currentLocation,
+            geofence.points,
+          );
+
+          // Store the initial state WITHOUT triggering notification
+          _deviceGeofenceStates[stateKey] = GeofenceState(
+            deviceId: deviceId,
+            geofenceId: geofence.id,
+            isInside: isInside,
+            lastUpdate: timestamp,
+          );
+
+          print(
+            '💾 Initial state: $deviceId in ${geofence.name} = ${isInside ? "INSIDE" : "OUTSIDE"}',
+          );
+        }
+      }
+
+      print('✅ Initial states loaded successfully');
+    } catch (e) {
+      print('❌ Error loading initial states: $e');
+    }
   }
 
   /// Process a location update and check geofence status
@@ -179,12 +290,13 @@ class GeofenceMonitorService {
     );
     print('   Is Inside: $isInside');
     print('   Geofence points: ${geofence.points.length}');
+    print('   State Key: $stateKey');
 
-    // Get previous state (null means unknown/first check)
+    // Get previous state
     final previousState = _deviceGeofenceStates[stateKey];
 
     if (previousState == null) {
-      // First time checking this device-geofence combination
+      // This shouldn't happen since we load initial states, but handle it anyway
       _deviceGeofenceStates[stateKey] = GeofenceState(
         deviceId: deviceId,
         geofenceId: geofence.id,
@@ -193,16 +305,21 @@ class GeofenceMonitorService {
       );
 
       print(
-        '🆕 Initial state for $deviceId in ${geofence.name}: ${isInside ? "INSIDE" : "OUTSIDE"}',
+        '⚠️ No previous state found (unexpected). Setting initial state: ${isInside ? "INSIDE" : "OUTSIDE"}',
       );
-      print('⚠️ First check - no notification sent (learning state)');
-      return; // Don't notify on first check
+      print(
+        '   This is likely the first location for this device-geofence pair',
+      );
+      return; // Don't notify
     }
 
     print(
-      '📊 Previous state: ${previousState.isInside ? "INSIDE" : "OUTSIDE"}',
+      '📊 Previous state: ${previousState.isInside ? "INSIDE" : "OUTSIDE"} (updated at: ${previousState.lastUpdate})',
     );
-    print('📊 Current state: ${isInside ? "INSIDE" : "OUTSIDE"}');
+    print(
+      '📊 Current state: ${isInside ? "INSIDE" : "OUTSIDE"} (timestamp: $timestamp)',
+    );
+    print('📊 State changed? ${previousState.isInside != isInside}');
 
     // Check for state change
     if (previousState.isInside != isInside) {
@@ -218,9 +335,12 @@ class GeofenceMonitorService {
         lastUpdate: timestamp,
       );
 
-      // Create notification
-      if (isInside) {
-        print('🟢 Triggering ENTRY notification');
+      // Create notification based on transition
+      if (isInside && !previousState.isInside) {
+        // OUTSIDE → INSIDE (Entry)
+        print(
+          '🟢 Triggering ENTRY notification for $deviceId entering ${geofence.name}',
+        );
         await _createGeofenceNotification(
           deviceId: deviceId,
           geofenceId: geofence.id,
@@ -228,20 +348,16 @@ class GeofenceMonitorService {
           notificationType: 'geofence_entry',
           location: currentLocation,
         );
-      } else {
-        // Only notify exit if device was previously inside
-        if (previousState.isInside) {
-          print('🔴 Triggering EXIT notification');
-          await _createGeofenceNotification(
-            deviceId: deviceId,
-            geofenceId: geofence.id,
-            geofenceName: geofence.name,
-            notificationType: 'geofence_exit',
-            location: currentLocation,
-          );
-        } else {
-          print('⚠️ Exit skipped - device was not previously inside');
-        }
+      } else if (!isInside && previousState.isInside) {
+        // INSIDE → OUTSIDE (Exit)
+        print('🔴 Triggering EXIT notification');
+        await _createGeofenceNotification(
+          deviceId: deviceId,
+          geofenceId: geofence.id,
+          geofenceName: geofence.name,
+          notificationType: 'geofence_exit',
+          location: currentLocation,
+        );
       }
     } else {
       print('✅ State unchanged - no notification needed');
@@ -425,7 +541,9 @@ class GeofenceMonitorService {
   /// Clear all states
   static void clearAllStates() {
     _deviceGeofenceStates.clear();
-    print('🔄 Cleared all geofence states');
+    _processedLocationIds.clear();
+    _hasLoadedInitialState = false;
+    print('🔄 Cleared all geofence states and processed location IDs');
   }
 
   /// Dispose and cleanup
@@ -433,7 +551,9 @@ class GeofenceMonitorService {
     _locationSubscription?.cancel();
     _geofenceSubscription?.cancel();
     _deviceGeofenceStates.clear();
+    _processedLocationIds.clear();
     _activeGeofences.clear();
+    _hasLoadedInitialState = false;
     print('🛑 Geofence Monitor Service disposed');
   }
 }

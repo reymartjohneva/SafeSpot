@@ -30,6 +30,93 @@ class _ProfileScreenState extends State<ProfileScreen>
     super.dispose();
   }
 
+  void _showLogoutConfirmation() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF2D2D2D),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(
+              color: Color(0xFF404040),
+              width: 1.5,
+            ),
+          ),
+          title: const Row(
+            children: [
+              Icon(
+                Icons.logout_rounded,
+                color: Color(0xFFFF8A50),
+                size: 28,
+              ),
+              SizedBox(width: 12),
+              Text(
+                'Logout',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Are you sure you want to logout?',
+            style: TextStyle(
+              color: Color(0xFFB0B0B0),
+              fontSize: 16,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFB0B0B0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+              ),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                handleLogout();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF8A50),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+              ),
+              child: const Text(
+                'Logout',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -100,52 +187,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           ],
         ),
       ),
-      actions: [
-        Container(
-          margin: const EdgeInsets.only(right: 16),
-          decoration: BoxDecoration(
-            gradient: isLoggingOut 
-              ? null 
-              : const LinearGradient(
-                  colors: [Color(0xFFFF6B35), Color(0xFFFF9800)],
-                ),
-            color: isLoggingOut ? const Color(0xFF2D2D2D) : null,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isLoggingOut 
-                ? const Color(0xFF404040) 
-                : Colors.transparent,
-            ),
-            boxShadow: isLoggingOut 
-              ? null 
-              : [
-                  BoxShadow(
-                    color: const Color(0xFFFF6B35).withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-          ),
-          child: IconButton(
-            icon: isLoggingOut 
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF8A50)),
-                  ),
-                )
-              : const Icon(
-                  Icons.logout_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
-            onPressed: isLoggingOut ? null : handleLogout,
-            tooltip: 'Logout',
-          ),
-        ),
-      ],
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(64), // Increased height
         child: Container(
@@ -251,8 +292,10 @@ class _ProfileScreenState extends State<ProfileScreen>
           userProfile: userProfile!,
           userDevices: userDevices,
           isUploadingImage: isUploadingImage,
+          isLoggingOut: isLoggingOut,
           onImagePicker: showImagePicker,
           onEditProfile: editProfile,
+          onLogout: _showLogoutConfirmation,
         ),
         ChildrenTab(
           childrenInfo: childrenInfo,

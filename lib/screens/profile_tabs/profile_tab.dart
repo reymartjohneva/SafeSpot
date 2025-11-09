@@ -9,16 +9,20 @@ class ProfileTab extends StatelessWidget {
   final UserProfile userProfile;
   final List<Device> userDevices;
   final bool isUploadingImage;
+  final bool isLoggingOut;
   final VoidCallback onImagePicker;
   final VoidCallback onEditProfile;
+  final VoidCallback onLogout;
 
   const ProfileTab({
     super.key,
     required this.userProfile,
     required this.userDevices,
     required this.isUploadingImage,
+    required this.isLoggingOut,
     required this.onImagePicker,
     required this.onEditProfile,
+    required this.onLogout,
   });
 
   @override
@@ -36,6 +40,8 @@ class ProfileTab extends StatelessWidget {
             _buildInformationCards(),
             const SizedBox(height: 32),
             _buildEditProfileButton(),
+            const SizedBox(height: 16),
+            _buildLogoutButton(),
             const SizedBox(height: 40),
           ],
         ),
@@ -328,6 +334,58 @@ class ProfileTab extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildLogoutButton() {
+    return Container(
+      width: double.infinity,
+      height: 58,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isLoggingOut ? const Color(0xFF404040) : Colors.red.withOpacity(0.5),
+          width: 2,
+        ),
+      ),
+      child: ElevatedButton(
+        onPressed: isLoggingOut ? null : onLogout,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.red,
+          elevation: 0,
+          disabledBackgroundColor: const Color(0xFF2D2D2D),
+          disabledForegroundColor: const Color(0xFF666666),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+        ),
+        child: isLoggingOut
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF8A50)),
+                ),
+              )
+            : const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.logout_rounded, size: 22),
+                  SizedBox(width: 10),
+                  Text(
+                    'Logout',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }

@@ -9,17 +9,17 @@ import 'services/geofence_monitor_service.dart';
 import 'screens/profile_screen.dart';
 import 'widgets/nav_bar.dart';
 import 'screens/emergency_hotlines_screen.dart';
-import 'screens/notification_screen.dart'; // Add this import
+import 'screens/notification_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
   await Supabase.initialize(
     url: 'https://zbnnusmjpwvtsigvvlha.supabase.co',
     anonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpibm51c21qcHd2dHNpZ3Z2bGhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3NTgwODQsImV4cCI6MjA2OTMzNDA4NH0.GWG-9PLnpYU2-foc8wI7fzPza746TGVgmMgab2geZvk',
   );
 
-  // Start Firebase to Supabase sync (every 5 minutes)
   FirebaseSyncService.startAutoSync(interval: const Duration(minutes: 5));
 
   runApp(const MyApp());
@@ -35,11 +35,11 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF4CAF50), // Modern green
+          seedColor: const Color(0xFF4CAF50),
           brightness: Brightness.light,
         ),
         useMaterial3: true,
-        fontFamily: 'Inter', // Modern font (if available)
+        fontFamily: 'Inter',
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             elevation: 0,
@@ -57,14 +57,236 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const AuthWrapper(),
+      home: const SplashScreen(), // Changed to custom splash
       routes: {
         '/login': (context) => const LoginPage(),
-        '/home':
-            (context) =>
-                const AuthenticatedRoute(child: MainNavigationScreen()),
+        '/home': (context) => const AuthenticatedRoute(child: MainNavigationScreen()),
         '/register': (context) => const RegistrationPage(),
       },
+    );
+  }
+}
+
+// Custom Splash Screen with animation
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({Key? key}) : super(key: key);
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+    );
+
+    _controller.forward();
+
+    // Navigate to auth wrapper after 3 seconds
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const AuthWrapper()),
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFFF9800), // Orange
+              Color(0xFFFF6B00), // Deep Orange
+              Color(0xFFFF8A00), // Orange
+              Color(0xFF4CAF50), // Green
+            ],
+            stops: [0.0, 0.3, 0.6, 1.0],
+          ),
+        ),
+        child: Stack(
+          children: [
+            // Animated circles in background
+            Positioned(
+              top: -50,
+              left: -50,
+              child: _buildFloatingCircle(200, 0),
+            ),
+            Positioned(
+              bottom: 100,
+              right: -80,
+              child: _buildFloatingCircle(250, 2),
+            ),
+            Positioned(
+              top: MediaQuery.of(context).size.height * 0.4,
+              left: -30,
+              child: _buildFloatingCircle(150, 4),
+            ),
+            
+            // Main content
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Logo with animation
+                  AnimatedBuilder(
+                    animation: _controller,
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: _scaleAnimation.value,
+                        child: Opacity(
+                          opacity: _fadeAnimation.value,
+                          child: _buildLogoContainer(),
+                        ),
+                      );
+                    },
+                  ),
+                  
+                  const SizedBox(height: 40),
+                  
+                  // App name with fade animation
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: const Text(
+                      'SafeSpot',
+                      style: TextStyle(
+                        fontSize: 42,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 2,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black26,
+                            offset: Offset(0, 4),
+                            blurRadius: 10,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 10),
+                  
+                  // Tagline
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: const Text(
+                      'Your Safety Companion',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white70,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFloatingCircle(double size, int delay) {
+    return TweenAnimationBuilder(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: Duration(seconds: 3 + delay),
+      curve: Curves.easeInOut,
+      builder: (context, double value, child) {
+        return Transform.translate(
+          offset: Offset(0, -20 * value),
+          child: Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withOpacity(0.1),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLogoContainer() {
+    return Container(
+      width: 200,
+      height: 200,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 30,
+            offset: const Offset(0, 15),
+          ),
+          BoxShadow(
+            color: const Color(0xFFFF9800).withOpacity(0.5),
+            blurRadius: 40,
+            offset: const Offset(0, 0),
+            spreadRadius: 5,
+          ),
+        ],
+      ),
+      child: Container(
+        margin: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.grey.shade100,
+              Colors.white,
+            ],
+          ),
+        ),
+        child: Center(
+          child: ClipOval(
+            child: Container(
+              width: 130,
+              height: 130,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+              ),
+              child: Image.asset(
+                'assets/app1_icon.png',
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -87,9 +309,7 @@ class AuthWrapper extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withOpacity(0.1),
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -136,9 +356,7 @@ class AuthenticatedRoute extends StatelessWidget {
       return child;
     } else {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(
-          context,
-        ).pushNamedAndRemoveUntil('/login', (route) => false);
+        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
       });
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -159,12 +377,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
   late PageController _pageController;
   late AnimationController _animationController;
 
-  // Define the screens list to ensure proper indexing
   final List<Widget> _screens = [
-    const DeviceScreen(), // Index 0 - Home
-    const EmergencyHotlinesScreen(), // Index 1 - Information
-    const NotificationScreen(), // Index 2 - Notifications (Updated!)
-    const ProfileScreen(), // Index 3 - Profile
+    const DeviceScreen(),
+    const EmergencyHotlinesScreen(),
+    const NotificationScreen(),
+    const ProfileScreen(),
   ];
 
   @override
@@ -176,7 +393,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
       vsync: this,
     );
 
-    // Initialize geofence monitoring service
     _initializeGeofenceMonitoring();
   }
 
@@ -193,7 +409,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
   void dispose() {
     _pageController.dispose();
     _animationController.dispose();
-    GeofenceMonitorService.dispose(); // Cleanup geofence monitoring
+    GeofenceMonitorService.dispose();
     super.dispose();
   }
 
@@ -203,14 +419,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
         _selectedIndex = index;
       });
 
-      // Smooth page transition
       _pageController.animateToPage(
         index,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOutCubic,
       );
 
-      // Add a subtle animation feedback
       _animationController.forward().then((_) {
         _animationController.reverse();
       });
@@ -220,7 +434,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA), // Light background
+      backgroundColor: const Color(0xFFFAFAFA),
       body: PageView(
         controller: _pageController,
         onPageChanged: (index) {

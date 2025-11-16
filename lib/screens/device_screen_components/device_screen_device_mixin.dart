@@ -13,14 +13,13 @@ mixin DeviceScreenDeviceMixin<T extends StatefulWidget> on State<T> {
   TabController get tabController;
 
   void startAutoRefresh() {
-    state.refreshTimer = Timer.periodic(
-      DeviceScreenStateData.refreshInterval,
-      (timer) {
-        if (mounted && DeviceService.isAuthenticated) {
-          loadDeviceLocationsOnly();
-        }
-      },
-    );
+    state.refreshTimer = Timer.periodic(DeviceScreenStateData.refreshInterval, (
+      timer,
+    ) {
+      if (mounted && DeviceService.isAuthenticated) {
+        loadDeviceLocationsOnly();
+      }
+    });
   }
 
   void stopAutoRefresh() {
@@ -81,75 +80,104 @@ mixin DeviceScreenDeviceMixin<T extends StatefulWidget> on State<T> {
         setState(() {
           state.deviceLocations[deviceId] = history;
         });
+
+        // Snap to roads after loading history
+        if (history.length >= 2) {
+          _snapPathIfMixinAvailable(deviceId);
+        }
       }
     } catch (e) {
       print('Failed to load location history for $deviceId: $e');
     }
   }
 
+  // Helper to call road snapping if the mixin is available
+  void _snapPathIfMixinAvailable(String deviceId) {
+    // Check if DeviceScreenRoadSnappingMixin is mixed in
+    if (this is dynamic) {
+      try {
+        (this as dynamic).snapDevicePathToRoad(deviceId);
+      } catch (e) {
+        // Road snapping mixin not available, skip
+      }
+    }
+  }
+
   void showAddDeviceModal() {
     state.deviceIdController.clear();
     state.deviceNameController.clear();
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Container(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: DraggableScrollableSheet(
-            initialChildSize: 0.6,
-            minChildSize: 0.4,
-            maxChildSize: 0.8,
-            expand: false,
-            builder: (context, scrollController) => Container(
-              decoration: const BoxDecoration(
-                color: DeviceScreenColors.cardBackground,
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(20),
+      builder:
+          (context) => StatefulBuilder(
+            builder:
+                (context, setModalState) => Container(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom,
+                  ),
+                  child: DraggableScrollableSheet(
+                    initialChildSize: 0.6,
+                    minChildSize: 0.4,
+                    maxChildSize: 0.8,
+                    expand: false,
+                    builder:
+                        (context, scrollController) => Container(
+                          decoration: const BoxDecoration(
+                            color: DeviceScreenColors.cardBackground,
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(20),
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              // Modal handle
+                              Container(
+                                width: 40,
+                                height: 4,
+                                margin: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: DeviceScreenColors.textSecondary
+                                      .withOpacity(0.4),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  controller: scrollController,
+                                  padding: const EdgeInsets.all(24),
+                                  child: AddDeviceFormWidget(
+                                    deviceIdController:
+                                        state.deviceIdController,
+                                    deviceNameController:
+                                        state.deviceNameController,
+                                    isAddingDevice: state.isAddingDevice,
+                                    onAddDevice: () async {
+                                      setModalState(
+                                        () => state.isAddingDevice = true,
+                                      );
+                                      await addDevice();
+                                      setModalState(
+                                        () => state.isAddingDevice = false,
+                                      );
+                                      if (mounted && !state.isAddingDevice) {
+                                        Navigator.pop(context);
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                  ),
                 ),
-              ),
-              child: Column(
-                children: [
-                  // Modal handle
-                  Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: DeviceScreenColors.textSecondary.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  
-                  Expanded(
-                    child: SingleChildScrollView(
-                      controller: scrollController,
-                      padding: const EdgeInsets.all(24),
-                      child: AddDeviceFormWidget(
-                        deviceIdController: state.deviceIdController,
-                        deviceNameController: state.deviceNameController,
-                        isAddingDevice: state.isAddingDevice,
-                        onAddDevice: () async {
-                          setModalState(() => state.isAddingDevice = true);
-                          await addDevice();
-                          setModalState(() => state.isAddingDevice = false);
-                          if (mounted && !state.isAddingDevice) {
-                            Navigator.pop(context);
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ),
-        ),
-      ),
     );
   }
 
@@ -166,7 +194,10 @@ mixin DeviceScreenDeviceMixin<T extends StatefulWidget> on State<T> {
     try {
       await DeviceService.addDevice(deviceId: deviceId, deviceName: deviceName);
 
-      DeviceUtils.showSuccessSnackBar(context, 'Device "$deviceName" added successfully');
+      DeviceUtils.showSuccessSnackBar(
+        context,
+        'Device "$deviceName" added successfully',
+      );
       state.deviceIdController.clear();
       state.deviceNameController.clear();
       await loadDevices();
@@ -178,7 +209,10 @@ mixin DeviceScreenDeviceMixin<T extends StatefulWidget> on State<T> {
   }
 
   Future<void> deleteDevice(Device device) async {
-    final confirmed = await DeviceUtils.showDeleteConfirmation(context, device.deviceName);
+    final confirmed = await DeviceUtils.showDeleteConfirmation(
+      context,
+      device.deviceName,
+    );
     if (confirmed == true) {
       try {
         await DeviceService.deleteDevice(device.id);

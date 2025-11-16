@@ -4,6 +4,7 @@ import 'package:safe_spot/screens/device_screen_components/device_screen_state.d
 import 'package:safe_spot/screens/device_screen_components/device_screen_location_mixin.dart';
 import 'package:safe_spot/screens/device_screen_components/device_screen_device_mixin.dart';
 import 'package:safe_spot/screens/device_screen_components/device_screen_geofence_mixin.dart';
+import 'package:safe_spot/screens/device_screen_components/device_screen_road_snapping_mixin.dart';
 import 'package:safe_spot/screens/device_screen_components/device_screen_ui.dart';
 
 class DeviceScreen extends StatefulWidget {
@@ -19,7 +20,8 @@ class _DeviceScreenState extends State<DeviceScreen>
         WidgetsBindingObserver,
         DeviceScreenLocationMixin,
         DeviceScreenDeviceMixin,
-        DeviceScreenGeofenceMixin {
+        DeviceScreenGeofenceMixin,
+        DeviceScreenRoadSnappingMixin {
   late TabController tabController;
   final MapController mapController = MapController();
 
@@ -40,6 +42,7 @@ class _DeviceScreenState extends State<DeviceScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    disposeRoadSnapping();
     state.dispose();
     tabController.dispose();
     super.dispose();

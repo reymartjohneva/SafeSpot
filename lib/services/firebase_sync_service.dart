@@ -19,6 +19,11 @@ class FirebaseSyncService {
   static bool _isSyncing = false;
   static DateTime? _lastSyncTime;
 
+  // Realtime streaming
+  static Timer? _realtimeTimer;
+  static bool _isRealtimeActive = false;
+  static int _realtimeEventsProcessed = 0;
+
   /// Start automatic syncing at specified interval
   static void startAutoSync({Duration interval = const Duration(minutes: 5)}) {
     stopAutoSync(); // Stop any existing timer
@@ -43,6 +48,161 @@ class FirebaseSyncService {
 
   /// Check if currently syncing
   static bool get isSyncing => _isSyncing;
+
+  /// Check if realtime sync is active
+  static bool get isRealtimeActive => _isRealtimeActive;
+
+  /// Get number of realtime events processed
+  static int get realtimeEventsProcessed => _realtimeEventsProcessed;
+
+  /// Start realtime Firebase listener using Server-Sent Events (SSE)
+  static Future<void> startRealtimeSync() async {
+    if (_isRealtimeActive) {
+      debugPrint('Realtime sync already active');
+      return;
+    }
+
+    try {
+      debugPrint('🔥 Starting realtime Firebase sync...');
+
+      // Stop any existing subscription
+      await stopRealtimeSync();
+
+      // Start listening to Firebase SSE endpoint
+      _isRealtimeActive = true;
+      _listenToFirebaseSSE();
+
+      debugPrint('✅ Realtime sync started');
+    } catch (e) {
+      debugPrint('❌ Failed to start realtime sync: $e');
+      _isRealtimeActive = false;
+    }
+  }
+
+  /// Stop realtime Firebase listener
+  static Future<void> stopRealtimeSync() async {
+    debugPrint('Stopping realtime sync...');
+    _isRealtimeActive = false;
+    _realtimeTimer?.cancel();
+    _realtimeTimer = null;
+  }
+
+  /// Listen to Firebase using Server-Sent Events
+  static void _listenToFirebaseSSE() {
+    final url = Uri.https(_firebaseHost, '$_firebaseDataPath.json', {
+      'auth': _firebaseAuthKey,
+    });
+
+    debugPrint('Connecting to Firebase SSE: $url');
+
+    // Create a continuous polling mechanism for near-realtime migration
+    // Poll every 2 seconds to ensure minimal delay
+    _realtimeTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
+      if (!_isRealtimeActive) {
+        timer.cancel();
+        return;
+      }
+
+      try {
+        await _pollAndProcessNewData();
+      } catch (e) {
+        debugPrint('Error in realtime poll: $e');
+      }
+    });
+
+    // Do an initial sync
+    _pollAndProcessNewData();
+  }
+
+  /// Poll Firebase and process only new data (optimized for continuous operation)
+  static Future<void> _pollAndProcessNewData() async {
+    if (_isSyncing) {
+      debugPrint('⏭️ Skipping poll - sync already in progress');
+      return; // Skip if already syncing
+    }
+
+    _isSyncing = true; // Mark as syncing to prevent overlaps
+
+    try {
+      final firebaseData = await _fetchFirebaseData();
+
+      if (firebaseData == null || firebaseData.isEmpty) {
+        _isSyncing = false;
+        return;
+      }
+
+      // Process each record
+      int newRecords = 0;
+      for (final entry in firebaseData.entries) {
+        final firebaseKey = entry.key;
+        final record = entry.value as Map<String, dynamic>;
+
+        try {
+          final deviceId = record['childID'] as String?;
+          final lat = record['lat'] as num?;
+          final long = record['long'] as num?;
+          final speed = record['speed'] as num?;
+          final timestampStr = record['timestamp'] as String?;
+
+          if (deviceId == null ||
+              lat == null ||
+              long == null ||
+              timestampStr == null) {
+            continue;
+          }
+
+          final timestamp = _parseTimestamp(timestampStr);
+          if (timestamp == null) continue;
+
+          // Check if device exists
+          final deviceExists = await _deviceExists(deviceId);
+          if (!deviceExists) {
+            debugPrint('⚠️ Device $deviceId not found, deleting from Firebase');
+            await deleteFirebaseRecord(firebaseKey);
+            continue;
+          }
+
+          // Insert into Supabase (no duplicate check - Firebase is the queue)
+          try {
+            await _supabase.from('location_history').insert({
+              'device_id': deviceId,
+              'latitude': lat.toDouble(),
+              'longitude': long.toDouble(),
+              'speed': speed?.toDouble(),
+              'timestamp': timestamp.toIso8601String(),
+              'source': 'firebase',
+            });
+
+            newRecords++;
+            _realtimeEventsProcessed++;
+
+            // ⚡ AUTO-DELETE from Firebase after successful migration
+            await deleteFirebaseRecord(firebaseKey);
+            debugPrint('✅ Migrated & deleted record $firebaseKey');
+          } catch (e) {
+            // If insert fails (e.g., duplicate), still delete from Firebase
+            debugPrint(
+              '⚠️ Insert failed for $firebaseKey: $e, deleting anyway',
+            );
+            await deleteFirebaseRecord(firebaseKey);
+          }
+        } catch (e) {
+          debugPrint('Error processing record $firebaseKey: $e');
+        }
+      }
+
+      if (newRecords > 0) {
+        _lastSyncTime = DateTime.now();
+        debugPrint(
+          '🔄 Migrated & cleaned $newRecords records (Firebase queue mode)',
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Error in continuous poll: $e');
+    } finally {
+      _isSyncing = false; // Always release the lock
+    }
+  }
 
   /// Manually trigger a sync
   static Future<SyncResult> syncData() async {

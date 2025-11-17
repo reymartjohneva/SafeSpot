@@ -11,6 +11,7 @@ class FirebaseSyncScreen extends StatefulWidget {
 
 class _FirebaseSyncScreenState extends State<FirebaseSyncScreen> {
   bool _isAutoSyncEnabled = false;
+  bool _isRealtimeSyncEnabled = true; // Enabled by default
   SyncResult? _lastSyncResult;
   bool _isSyncing = false;
 
@@ -29,6 +30,7 @@ class _FirebaseSyncScreenState extends State<FirebaseSyncScreen> {
   void _checkSyncStatus() {
     setState(() {
       _isSyncing = FirebaseSyncService.isSyncing;
+      _isRealtimeSyncEnabled = FirebaseSyncService.isRealtimeActive;
     });
   }
 
@@ -81,6 +83,30 @@ class _FirebaseSyncScreenState extends State<FirebaseSyncScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Auto-sync disabled'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
+  }
+
+  void _toggleRealtimeSync(bool enabled) {
+    setState(() {
+      _isRealtimeSyncEnabled = enabled;
+    });
+
+    if (enabled) {
+      FirebaseSyncService.startRealtimeSync();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Realtime sync enabled (instant migration)'),
+          backgroundColor: Colors.blue,
+        ),
+      );
+    } else {
+      FirebaseSyncService.stopRealtimeSync();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Realtime sync disabled'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -178,6 +204,7 @@ class _FirebaseSyncScreenState extends State<FirebaseSyncScreen> {
   @override
   Widget build(BuildContext context) {
     final lastSync = FirebaseSyncService.lastSyncTime;
+    final realtimeEvents = FirebaseSyncService.realtimeEventsProcessed;
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -211,6 +238,17 @@ class _FirebaseSyncScreenState extends State<FirebaseSyncScreen> {
                       color: _isSyncing ? Colors.blue : Colors.grey,
                     ),
                     _buildStatusRow(
+                      'Realtime Sync:',
+                      _isRealtimeSyncEnabled ? 'Active' : 'Disabled',
+                      color: _isRealtimeSyncEnabled ? Colors.blue : Colors.grey,
+                    ),
+                    if (_isRealtimeSyncEnabled)
+                      _buildStatusRow(
+                        'Records Migrated:',
+                        realtimeEvents.toString(),
+                        color: Colors.green,
+                      ),
+                    _buildStatusRow(
                       'Auto-Sync:',
                       _isAutoSyncEnabled ? 'Enabled' : 'Disabled',
                       color: _isAutoSyncEnabled ? Colors.green : Colors.grey,
@@ -226,11 +264,25 @@ class _FirebaseSyncScreenState extends State<FirebaseSyncScreen> {
             ),
             const SizedBox(height: 16),
 
+            // Realtime Sync Control (NEW)
+            Card(
+              child: SwitchListTile(
+                title: const Text('Continuous Realtime Sync (Recommended)'),
+                subtitle: const Text(
+                  'Constantly checks for new data every 2 seconds',
+                ),
+                value: _isRealtimeSyncEnabled,
+                onChanged: _isSyncing ? null : _toggleRealtimeSync,
+                secondary: const Icon(Icons.bolt),
+              ),
+            ),
+            const SizedBox(height: 8),
+
             // Auto-Sync Control
             Card(
               child: SwitchListTile(
-                title: const Text('Auto-Sync'),
-                subtitle: const Text('Automatically sync every 5 minutes'),
+                title: const Text('Periodic Auto-Sync (Fallback)'),
+                subtitle: const Text('Backup sync every 5 minutes'),
                 value: _isAutoSyncEnabled,
                 onChanged: _isSyncing ? null : _toggleAutoSync,
                 secondary: const Icon(Icons.schedule),
@@ -354,15 +406,18 @@ class _FirebaseSyncScreenState extends State<FirebaseSyncScreen> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'This feature syncs GPS location data from Firebase Realtime Database to Supabase. '
-                      'The data is matched with registered devices and stored in the location history.',
+                      'Firebase Queue Mode: Data is instantly migrated then auto-deleted from Firebase. '
+                      'Firebase acts as a temporary queue, not a permanent database.',
                       style: TextStyle(fontSize: 12),
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      '• Duplicate records are automatically skipped\n'
-                      '• Device IDs must exist in child_info table\n'
-                      '• Source is marked as "firebase" for tracking',
+                      '• Continuous Sync: Checks every 2 seconds\n'
+                      '• Instant migration (max 2 second delay)\n'
+                      '• Auto-cleanup: Deletes from Firebase after migration\n'
+                      '• No duplicate checking needed (queue mode)\n'
+                      '• Firebase stays clean and fast\n'
+                      '• Periodic backup sync every 5 minutes',
                       style: TextStyle(fontSize: 12),
                     ),
                   ],

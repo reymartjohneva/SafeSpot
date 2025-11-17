@@ -25,6 +25,7 @@ class _FirebaseSyncStatusWidgetState extends State<FirebaseSyncStatusWidget> {
 
   Widget _buildCompactView() {
     final isSyncing = FirebaseSyncService.isSyncing;
+    final isRealtime = FirebaseSyncService.isRealtimeActive;
 
     return IconButton(
       icon:
@@ -39,20 +40,30 @@ class _FirebaseSyncStatusWidgetState extends State<FirebaseSyncStatusWidget> {
                   ),
                 ),
               )
-              : const Icon(Icons.cloud_sync),
+              : Icon(
+                isRealtime ? Icons.cloud_sync : Icons.cloud_done,
+                color: isRealtime ? Colors.blue : Colors.green,
+              ),
       onPressed: () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const FirebaseSyncScreen()),
         );
       },
-      tooltip: isSyncing ? 'Syncing...' : 'Open Firebase Sync',
+      tooltip:
+          isSyncing
+              ? 'Syncing...'
+              : isRealtime
+              ? 'Continuous sync active (2s)'
+              : 'Open Firebase Sync',
     );
   }
 
   Widget _buildFullView() {
     final isSyncing = FirebaseSyncService.isSyncing;
     final lastSync = FirebaseSyncService.lastSyncTime;
+    final isRealtime = FirebaseSyncService.isRealtimeActive;
+    final realtimeEvents = FirebaseSyncService.realtimeEventsProcessed;
 
     return Card(
       child: InkWell(
@@ -73,19 +84,50 @@ class _FirebaseSyncStatusWidgetState extends State<FirebaseSyncStatusWidget> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               else
-                Icon(Icons.cloud_done, color: Colors.green, size: 24),
+                Icon(
+                  isRealtime ? Icons.sync : Icons.cloud_done,
+                  color: isRealtime ? Colors.blue : Colors.green,
+                  size: 24,
+                ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Firebase Sync',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    Row(
+                      children: [
+                        Text(
+                          'Firebase Sync',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        if (isRealtime) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.blue,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'LIVE',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     Text(
                       isSyncing
                           ? 'Syncing...'
+                          : isRealtime
+                          ? 'Realtime active • $realtimeEvents migrated'
                           : lastSync != null
                           ? 'Last synced: ${_formatTime(lastSync)}'
                           : 'Never synced',
@@ -197,11 +239,17 @@ class SyncStatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSyncing = FirebaseSyncService.isSyncing;
+    final isRealtime = FirebaseSyncService.isRealtimeActive;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isSyncing ? Colors.blue : Colors.green,
+        color:
+            isSyncing
+                ? Colors.orange
+                : isRealtime
+                ? Colors.blue
+                : Colors.green,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -217,10 +265,18 @@ class SyncStatusBadge extends StatelessWidget {
               ),
             )
           else
-            const Icon(Icons.check, size: 12, color: Colors.white),
+            Icon(
+              isRealtime ? Icons.sync : Icons.check,
+              size: 12,
+              color: Colors.white,
+            ),
           const SizedBox(width: 4),
           Text(
-            isSyncing ? 'Syncing' : 'Synced',
+            isSyncing
+                ? 'Syncing'
+                : isRealtime
+                ? 'Live'
+                : 'Synced',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 10,

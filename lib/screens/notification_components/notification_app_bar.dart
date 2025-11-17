@@ -5,12 +5,16 @@ class NotificationAppBar extends StatelessWidget implements PreferredSizeWidget 
   final int unreadCount;
   final VoidCallback onMarkAllAsRead;
   final VoidCallback onDeleteOld;
+  final VoidCallback? onDebug;
+  final VoidCallback? onForceCheck;
 
   const NotificationAppBar({
     Key? key,
     required this.unreadCount,
     required this.onMarkAllAsRead,
     required this.onDeleteOld,
+    this.onDebug,
+    this.onForceCheck,
   }) : super(key: key);
 
   @override
@@ -154,9 +158,75 @@ class NotificationAppBar extends StatelessWidget implements PreferredSizeWidget 
                 onMarkAllAsRead();
               } else if (value == 'delete_old') {
                 onDeleteOld();
+              } else if (value == 'debug' && onDebug != null) {
+                onDebug!();
+              } else if (value == 'force_check' && onForceCheck != null) {
+                onForceCheck!();
               }
             },
             itemBuilder: (context) => [
+              if (onForceCheck != null)
+                PopupMenuItem(
+                  value: 'force_check',
+                  height: 48,
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.refresh_rounded,
+                          color: Colors.blue,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Force Check Geofences',
+                        style: TextStyle(
+                          color: NotificationColors.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (onDebug != null)
+                PopupMenuItem(
+                  value: 'debug',
+                  height: 48,
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.purple.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.bug_report_rounded,
+                          color: Colors.purple,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Debug Monitor',
+                        style: TextStyle(
+                          color: NotificationColors.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (onDebug != null || onForceCheck != null)
+                const PopupMenuDivider(height: 1),
               PopupMenuItem(
                 value: 'mark_all_read',
                 height: 48,

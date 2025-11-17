@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:safe_spot/services/notification_service.dart';
+import 'package:safe_spot/services/geofence_monitor_service.dart';
 import 'package:safe_spot/screens/notification_components/notification_app_bar.dart';
 import 'package:safe_spot/screens/notification_components/notification_filter_chips.dart';
 import 'package:safe_spot/screens/notification_components/notification_card.dart';
 import 'package:safe_spot/screens/notification_components/notification_empty_state.dart';
 import 'package:safe_spot/screens/notification_components/notification_colors.dart';
+import 'package:safe_spot/screens/geofence_debug_screen.dart';
 import 'dart:async';
 
 class NotificationScreen extends StatefulWidget {
@@ -51,6 +53,7 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
     try {
       _notificationSubscription = NotificationService.subscribeToNotifications()
           .listen((notifications) {
+        print('📱 Notification stream received: ${notifications.length} notifications');
         if (mounted) {
           setState(() {
             _notifications = notifications;
@@ -75,6 +78,8 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
       } else {
         notifications = await NotificationService.getNotificationsByType(_selectedFilter);
       }
+
+      print('📱 Loaded ${notifications.length} notifications from database');
 
       if (mounted) {
         setState(() {
@@ -350,6 +355,15 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
         unreadCount: _unreadCount,
         onMarkAllAsRead: _markAllAsRead,
         onDeleteOld: _deleteOldNotifications,
+        onDebug: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const GeofenceDebugScreen(),
+            ),
+          );
+        },
+        onForceCheck: _forceCheckGeofences,
       ),
       body: FadeTransition(
         opacity: _fadeAnimation,
@@ -372,6 +386,29 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
         ),
       ),
     );
+  }
+
+  Future<void> _createTestNotification() async {
+    try {
+      await GeofenceMonitorService.createTestNotification();
+      _showSuccessSnackBar('Test notification created!');
+      await Future.delayed(const Duration(milliseconds: 500));
+      _loadNotifications();
+    } catch (e) {
+      _showErrorSnackBar('Failed to create test notification: $e');
+    }
+  }
+
+  Future<void> _forceCheckGeofences() async {
+    try {
+      _showSuccessSnackBar('Checking all devices...');
+      await GeofenceMonitorService.recheckAllDevices();
+      _showSuccessSnackBar('Check completed! See console for details.');
+      await Future.delayed(const Duration(seconds: 1));
+      _loadNotifications();
+    } catch (e) {
+      _showErrorSnackBar('Failed to check geofences: $e');
+    }
   }
 
   Widget _buildBody() {

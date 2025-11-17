@@ -6,7 +6,6 @@ import 'package:safe_spot/screens/notification_components/notification_filter_ch
 import 'package:safe_spot/screens/notification_components/notification_card.dart';
 import 'package:safe_spot/screens/notification_components/notification_empty_state.dart';
 import 'package:safe_spot/screens/notification_components/notification_colors.dart';
-import 'package:safe_spot/screens/geofence_debug_screen.dart';
 import 'dart:async';
 
 class NotificationScreen extends StatefulWidget {
@@ -16,7 +15,8 @@ class NotificationScreen extends StatefulWidget {
   State<NotificationScreen> createState() => _NotificationScreenState();
 }
 
-class _NotificationScreenState extends State<NotificationScreen> with TickerProviderStateMixin {
+class _NotificationScreenState extends State<NotificationScreen>
+    with TickerProviderStateMixin {
   List<AppNotification> _notifications = [];
   bool _isLoading = false;
   String _selectedFilter = 'all';
@@ -53,14 +53,16 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
     try {
       _notificationSubscription = NotificationService.subscribeToNotifications()
           .listen((notifications) {
-        print('📱 Notification stream received: ${notifications.length} notifications');
-        if (mounted) {
-          setState(() {
-            _notifications = notifications;
+            print(
+              '📱 Notification stream received: ${notifications.length} notifications',
+            );
+            if (mounted) {
+              setState(() {
+                _notifications = notifications;
+              });
+              _loadUnreadCount();
+            }
           });
-          _loadUnreadCount();
-        }
-      });
     } catch (e) {
       print('Error subscribing to notifications: $e');
     }
@@ -72,11 +74,13 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
     setState(() => _isLoading = true);
     try {
       List<AppNotification> notifications;
-      
+
       if (_selectedFilter == 'all') {
         notifications = await NotificationService.getUserNotifications();
       } else {
-        notifications = await NotificationService.getNotificationsByType(_selectedFilter);
+        notifications = await NotificationService.getNotificationsByType(
+          _selectedFilter,
+        );
       }
 
       print('📱 Loaded ${notifications.length} notifications from database');
@@ -126,7 +130,7 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
       await NotificationService.markAllAsRead();
       await _loadNotifications();
       await _loadUnreadCount();
-      
+
       if (mounted) {
         _showSuccessSnackBar('All notifications marked as read');
       }
@@ -142,7 +146,7 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
       await NotificationService.deleteNotification(notificationId);
       await _loadNotifications();
       await _loadUnreadCount();
-      
+
       if (mounted) {
         _showSuccessSnackBar('Notification deleted');
       }
@@ -161,9 +165,11 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
         final count = await NotificationService.deleteOldNotifications();
         await _loadNotifications();
         await _loadUnreadCount();
-        
+
         if (mounted) {
-          _showSuccessSnackBar('Deleted $count old notification${count != 1 ? 's' : ''}');
+          _showSuccessSnackBar(
+            'Deleted $count old notification${count != 1 ? 's' : ''}',
+          );
         }
       } catch (e) {
         if (mounted) {
@@ -176,84 +182,82 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
   Future<bool?> _showDeleteConfirmationDialog() {
     return showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: NotificationColors.cardBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(
-            color: Color(0xFF404040),
-            width: 1.5,
-          ),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.delete_sweep_rounded,
-                color: Colors.red,
-                size: 24,
-              ),
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: NotificationColors.cardBackground,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+              side: const BorderSide(color: Color(0xFF404040), width: 1.5),
             ),
-            const SizedBox(width: 12),
-            const Text(
-              'Delete Old',
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.delete_sweep_rounded,
+                    color: Colors.red,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Delete Old',
+                  style: TextStyle(
+                    color: NotificationColors.textPrimary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            content: const Text(
+              'Delete all notifications older than 30 days? This action cannot be undone.',
               style: TextStyle(
-                color: NotificationColors.textPrimary,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+                color: NotificationColors.textSecondary,
+                fontSize: 15,
+                height: 1.5,
               ),
             ),
-          ],
-        ),
-        content: const Text(
-          'Delete all notifications older than 30 days? This action cannot be undone.',
-          style: TextStyle(
-            color: NotificationColors.textSecondary,
-            fontSize: 15,
-            height: 1.5,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                style: TextButton.styleFrom(
+                  foregroundColor: NotificationColors.textSecondary,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                ),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                ),
+                child: const Text(
+                  'Delete',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            style: TextButton.styleFrom(
-              foregroundColor: NotificationColors.textSecondary,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
-            child: const Text(
-              'Delete',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -288,9 +292,7 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
         ),
         backgroundColor: NotificationColors.primaryOrange,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
         duration: const Duration(seconds: 2),
       ),
@@ -328,9 +330,7 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
         ),
         backgroundColor: Colors.red.shade700,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
       ),
     );
@@ -355,15 +355,6 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
         unreadCount: _unreadCount,
         onMarkAllAsRead: _markAllAsRead,
         onDeleteOld: _deleteOldNotifications,
-        onDebug: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const GeofenceDebugScreen(),
-            ),
-          );
-        },
-        onForceCheck: _forceCheckGeofences,
       ),
       body: FadeTransition(
         opacity: _fadeAnimation,
@@ -399,18 +390,6 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
     }
   }
 
-  Future<void> _forceCheckGeofences() async {
-    try {
-      _showSuccessSnackBar('Checking all devices...');
-      await GeofenceMonitorService.recheckAllDevices();
-      _showSuccessSnackBar('Check completed! See console for details.');
-      await Future.delayed(const Duration(seconds: 1));
-      _loadNotifications();
-    } catch (e) {
-      _showErrorSnackBar('Failed to check geofences: $e');
-    }
-  }
-
   Widget _buildBody() {
     if (_isLoading) {
       return Center(
@@ -431,7 +410,9 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
                 ],
               ),
               child: const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(NotificationColors.primaryOrange),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  NotificationColors.primaryOrange,
+                ),
                 strokeWidth: 3,
               ),
             ),
@@ -470,10 +451,7 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
           builder: (context, value, child) {
             return Transform.translate(
               offset: Offset(0, 20 * (1 - value)),
-              child: Opacity(
-                opacity: value,
-                child: child,
-              ),
+              child: Opacity(opacity: value, child: child),
             );
           },
           child: NotificationCard(

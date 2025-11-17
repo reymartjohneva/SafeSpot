@@ -32,6 +32,9 @@ class GeofenceMonitorService {
   // Track last processed timestamp per device
   static Map<String, DateTime> _lastProcessedTimestamp = {};
 
+  // Timestamp when monitoring started
+  static DateTime? _monitoringStartTime;
+
   static String? get currentUserId => _client.auth.currentUser?.id;
   static bool get isAuthenticated => currentUserId != null;
 
@@ -42,6 +45,10 @@ class GeofenceMonitorService {
     }
 
     print('🔄 Initializing Geofence Monitor Service...');
+
+    // Record monitoring start time to filter old data
+    _monitoringStartTime = DateTime.now();
+    print('⏰ Monitoring start time: $_monitoringStartTime');
 
     // Reset everything
     _hasLoadedInitialState = false;
@@ -82,10 +89,11 @@ class GeofenceMonitorService {
   static Future<void> _loadActiveGeofences() async {
     try {
       final geofencesData = await GeofenceService.getUserGeofences();
-      _activeGeofences = geofencesData
-          .where((g) => g['is_active'] == true)
-          .map((g) => Geofence.fromSupabase(g))
-          .toList();
+      _activeGeofences =
+          geofencesData
+              .where((g) => g['is_active'] == true)
+              .map((g) => Geofence.fromSupabase(g))
+              .toList();
 
       print('📍 Loaded ${_activeGeofences.length} active geofences');
     } catch (e) {
@@ -102,24 +110,26 @@ class GeofenceMonitorService {
         .stream(primaryKey: ['id'])
         .eq('user_id', currentUserId!)
         .listen((data) {
-      print('🔄 Geofences updated, reloading...');
-      _activeGeofences = data
-          .where((g) => g['is_active'] == true)
-          .map((g) => Geofence.fromSupabase(g))
-          .toList();
+          print('🔄 Geofences updated, reloading...');
+          _activeGeofences =
+              data
+                  .where((g) => g['is_active'] == true)
+                  .map((g) => Geofence.fromSupabase(g))
+                  .toList();
 
-      print('📍 Updated to ${_activeGeofences.length} active geofences');
-      
-      // Clear states for removed geofences
-      _cleanupStatesForRemovedGeofences();
-    });
+          print('📍 Updated to ${_activeGeofences.length} active geofences');
+
+          // Clear states for removed geofences
+          _cleanupStatesForRemovedGeofences();
+        });
   }
 
   /// Clean up states for geofences that no longer exist
   static void _cleanupStatesForRemovedGeofences() {
     final activeGeofenceIds = _activeGeofences.map((g) => g.id).toSet();
-    _deviceGeofenceStates.removeWhere((key, state) =>
-        !activeGeofenceIds.contains(state.geofenceId));
+    _deviceGeofenceStates.removeWhere(
+      (key, state) => !activeGeofenceIds.contains(state.geofenceId),
+    );
   }
 
   /// Subscribe to real-time location updates
@@ -156,14 +166,16 @@ class GeofenceMonitorService {
             }
 
             print('📡 Stream update received: ${data.length} records');
-            print('   First 3 device_ids: ${data.take(3).map((e) => e['device_id']).toList()}');
+            print(
+              '   First 3 device_ids: ${data.take(3).map((e) => e['device_id']).toList()}',
+            );
 
             int newCount = 0;
             int skippedCount = 0;
 
             for (final location in data) {
               final deviceId = location['device_id'];
-              
+
               // Only process locations for our devices
               if (!_deviceIds.contains(deviceId)) {
                 print('⚠️ Skipping location for unknown device: $deviceId');
@@ -171,6 +183,14 @@ class GeofenceMonitorService {
               }
 
               final locationId = location['id'].toString();
+              final timestamp = DateTime.parse(location['timestamp'] as String);
+
+              // Skip locations created BEFORE monitoring started (prevents initial spam)
+              if (_monitoringStartTime != null &&
+                  timestamp.isBefore(_monitoringStartTime!)) {
+                skippedCount++;
+                continue;
+              }
 
               // Skip if we've already processed this location
               if (_processedLocationIds.contains(locationId)) {
@@ -183,12 +203,16 @@ class GeofenceMonitorService {
               newCount++;
 
               print('🆕 NEW location for $deviceId (ID: $locationId)');
-              print('   📍 Latitude: ${location['latitude']}, Longitude: ${location['longitude']}');
+              print(
+                '   📍 Latitude: ${location['latitude']}, Longitude: ${location['longitude']}',
+              );
               print('   ⏰ Timestamp: ${location['timestamp']}');
               _processLocationUpdate(location);
             }
 
-            print('   ✅ Stream processing complete: $newCount new, $skippedCount skipped');
+            print(
+              '   ✅ Stream processing complete: $newCount new, $skippedCount skipped',
+            );
           },
           onError: (error) {
             print('❌ Location stream error: $error');
@@ -202,7 +226,7 @@ class GeofenceMonitorService {
   /// Poll for new locations periodically (backup mechanism)
   static void _startPollingForNewLocations() {
     _pollTimer?.cancel();
-    
+
     _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
       try {
         await _pollForNewLocations();
@@ -210,7 +234,7 @@ class GeofenceMonitorService {
         print('❌ Polling error: $e');
       }
     });
-    
+
     print('⏰ Started polling for new locations every 10 seconds');
   }
 
@@ -220,7 +244,7 @@ class GeofenceMonitorService {
       try {
         // Get last processed timestamp for this device
         final lastTimestamp = _lastProcessedTimestamp[deviceId];
-        
+
         // Build query
         PostgrestFilterBuilder query = _client
             .from('location_history')
@@ -229,7 +253,11 @@ class GeofenceMonitorService {
 
         // Filter by timestamp if we have one
         if (lastTimestamp != null) {
-          query = query.filter('timestamp', 'gt', lastTimestamp.toIso8601String());
+          query = query.filter(
+            'timestamp',
+            'gt',
+            lastTimestamp.toIso8601String(),
+          );
         }
 
         final newLocations = await query
@@ -238,16 +266,18 @@ class GeofenceMonitorService {
 
         if (newLocations.isEmpty) continue;
 
-        print('🔍 Polling found ${newLocations.length} new locations for $deviceId');
+        print(
+          '🔍 Polling found ${newLocations.length} new locations for $deviceId',
+        );
 
         for (final location in newLocations) {
           final locationId = location['id'].toString();
-          
+
           // Skip if already processed
           if (_processedLocationIds.contains(locationId)) continue;
 
           _processedLocationIds.add(locationId);
-          
+
           final timestamp = DateTime.parse(location['timestamp'] as String);
           _lastProcessedTimestamp[deviceId] = timestamp;
 
@@ -264,35 +294,18 @@ class GeofenceMonitorService {
   static Future<void> _loadInitialStates() async {
     try {
       print('🔄 Loading initial states for devices...');
+      print('📅 Using monitoring start time: $_monitoringStartTime');
 
-      final initializationTime = DateTime.now();
-      print('📅 Initialization timestamp: $initializationTime');
-
-      // First, get ALL existing location IDs created BEFORE initialization and mark them as processed
-      print('🔄 Fetching location IDs created before initialization...');
-      final allLocations = await _client
-          .from('location_history')
-          .select('id, timestamp')
-          .inFilter('device_id', _deviceIds)
-          .filter('timestamp', 'lt', initializationTime.toIso8601String());
-
-      int markedCount = 0;
-      for (final loc in allLocations) {
-        _processedLocationIds.add(loc['id'].toString());
-        markedCount++;
-      }
-
-      print('✅ Marked $markedCount existing locations (before init) as processed');
-
-      // Now get the latest location per device for initial state
+      // Get the latest location per device for initial state
       for (final deviceId in _deviceIds) {
-        final latestLocation = await _client
-            .from('location_history')
-            .select()
-            .eq('device_id', deviceId)
-            .order('timestamp', ascending: false)
-            .limit(1)
-            .maybeSingle();
+        final latestLocation =
+            await _client
+                .from('location_history')
+                .select()
+                .eq('device_id', deviceId)
+                .order('timestamp', ascending: false)
+                .limit(1)
+                .maybeSingle();
 
         if (latestLocation == null) {
           print('⚠️ No location history found for device: $deviceId');
@@ -307,7 +320,9 @@ class GeofenceMonitorService {
         // Track last processed timestamp
         _lastProcessedTimestamp[deviceId] = timestamp;
 
-        print('📍 Last known location for $deviceId: ($latitude, $longitude) at $timestamp');
+        print(
+          '📍 Last known location for $deviceId: ($latitude, $longitude) at $timestamp',
+        );
 
         // Check this location against all geofences to establish initial state
         for (final geofence in _activeGeofences) {
@@ -325,7 +340,9 @@ class GeofenceMonitorService {
             lastUpdate: timestamp,
           );
 
-          print('💾 Initial state: $deviceId in ${geofence.name} = ${isInside ? "INSIDE" : "OUTSIDE"}');
+          print(
+            '💾 Initial state: $deviceId in ${geofence.name} = ${isInside ? "INSIDE" : "OUTSIDE"}',
+          );
         }
       }
 
@@ -337,7 +354,9 @@ class GeofenceMonitorService {
   }
 
   /// Process a location update and check geofence status
-  static Future<void> _processLocationUpdate(Map<String, dynamic> locationData) async {
+  static Future<void> _processLocationUpdate(
+    Map<String, dynamic> locationData,
+  ) async {
     try {
       final deviceId = locationData['device_id'] as String;
       final latitude = (locationData['latitude'] as num).toDouble();
@@ -368,7 +387,7 @@ class GeofenceMonitorService {
         );
         checksPerformed++;
       }
-      
+
       print('✅ Checked against $checksPerformed geofences');
       print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     } catch (e) {
@@ -391,7 +410,9 @@ class GeofenceMonitorService {
     );
 
     print('🔍 Checking $deviceId vs ${geofence.name}:');
-    print('   Current location: (${currentLocation.latitude}, ${currentLocation.longitude})');
+    print(
+      '   Current location: (${currentLocation.latitude}, ${currentLocation.longitude})',
+    );
     print('   Is inside: $isInside');
 
     // Get previous state
@@ -407,11 +428,15 @@ class GeofenceMonitorService {
         lastUpdate: timestamp,
       );
 
-      print('⚠️ No previous state (creating initial state): ${isInside ? "INSIDE" : "OUTSIDE"}');
+      print(
+        '⚠️ No previous state (creating initial state): ${isInside ? "INSIDE" : "OUTSIDE"}',
+      );
       return; // Don't notify on first state
     }
 
-    print('📊 Previous: ${previousState.isInside ? "INSIDE" : "OUTSIDE"} → Current: ${isInside ? "INSIDE" : "OUTSIDE"}');
+    print(
+      '📊 Previous: ${previousState.isInside ? "INSIDE" : "OUTSIDE"} → Current: ${isInside ? "INSIDE" : "OUTSIDE"}',
+    );
 
     // Check for state change
     if (previousState.isInside != isInside) {
@@ -471,11 +496,12 @@ class GeofenceMonitorService {
       print('   Type: $notificationType');
 
       // Get device info
-      final deviceData = await _client
-          .from('devices')
-          .select('device_name')
-          .eq('device_id', deviceId)
-          .maybeSingle();
+      final deviceData =
+          await _client
+              .from('devices')
+              .select('device_name')
+              .eq('device_id', deviceId)
+              .maybeSingle();
 
       if (deviceData == null) {
         print('❌ Device not found: $deviceId');
@@ -557,15 +583,18 @@ class GeofenceMonitorService {
       print('🔧 Manual check for device: $deviceId');
 
       // Get latest location
-      final locationData = await _client
-          .from('location_history')
-          .select('*')
-          .eq('device_id', deviceId)
-          .order('timestamp', ascending: false)
-          .limit(1)
-          .single();
+      final locationData =
+          await _client
+              .from('location_history')
+              .select('*')
+              .eq('device_id', deviceId)
+              .order('timestamp', ascending: false)
+              .limit(1)
+              .single();
 
-      print('📍 Found location: ${locationData['latitude']}, ${locationData['longitude']}');
+      print(
+        '📍 Found location: ${locationData['latitude']}, ${locationData['longitude']}',
+      );
 
       // Process it
       await _processLocationUpdate(locationData);
@@ -592,7 +621,10 @@ class GeofenceMonitorService {
   }
 
   /// Get current state for a device-geofence combination
-  static GeofenceState? getDeviceGeofenceState(String deviceId, String geofenceId) {
+  static GeofenceState? getDeviceGeofenceState(
+    String deviceId,
+    String geofenceId,
+  ) {
     return _deviceGeofenceStates['$deviceId:$geofenceId'];
   }
 
@@ -611,7 +643,9 @@ class GeofenceMonitorService {
 
   /// Reset all states for a device
   static void resetDeviceStates(String deviceId) {
-    _deviceGeofenceStates.removeWhere((key, value) => value.deviceId == deviceId);
+    _deviceGeofenceStates.removeWhere(
+      (key, value) => value.deviceId == deviceId,
+    );
     print('🔄 Reset all states for device $deviceId');
   }
 
@@ -621,7 +655,7 @@ class GeofenceMonitorService {
     _processedLocationIds.clear();
     _hasLoadedInitialState = false;
     print('🔄 Cleared all geofence states');
-    
+
     // Reinitialize to reload states
     await initialize();
   }

@@ -140,9 +140,13 @@ class DeviceScreenUI {
                           _PulsingIconWidget(),
                           const SizedBox(height: 32),
                           ShaderMask(
-                            shaderCallback: (bounds) => const LinearGradient(
-                              colors: [Color(0xFFFF6B35), Color(0xFFFF9800)],
-                            ).createShader(bounds),
+                            shaderCallback:
+                                (bounds) => const LinearGradient(
+                                  colors: [
+                                    Color(0xFFFF6B35),
+                                    Color(0xFFFF9800),
+                                  ],
+                                ).createShader(bounds),
                             child: const Text(
                               'Authentication Required',
                               style: TextStyle(
@@ -159,7 +163,8 @@ class DeviceScreenUI {
                             'Please log in to manage your devices\nand access location tracking',
                             style: TextStyle(
                               fontSize: 15,
-                              color: DeviceScreenColors.textSecondary.withOpacity(0.8),
+                              color: DeviceScreenColors.textSecondary
+                                  .withOpacity(0.8),
                               height: 1.6,
                             ),
                             textAlign: TextAlign.center,
@@ -256,9 +261,10 @@ class DeviceScreenUI {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       ShaderMask(
-                        shaderCallback: (bounds) => const LinearGradient(
-                          colors: [Colors.white, Color(0xFFFFB74D)],
-                        ).createShader(bounds),
+                        shaderCallback:
+                            (bounds) => const LinearGradient(
+                              colors: [Colors.white, Color(0xFFFFB74D)],
+                            ).createShader(bounds),
                         child: const Text(
                           'SafeSpot',
                           style: TextStyle(
@@ -270,7 +276,6 @@ class DeviceScreenUI {
                         ),
                       ),
                       const SizedBox(height: 2),
-                     
                     ],
                   ),
                 ),
@@ -286,10 +291,7 @@ class DeviceScreenUI {
           decoration: BoxDecoration(
             color: DeviceScreenColors.surfaceColor,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.05),
-              width: 1,
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.05), width: 1),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.2),
@@ -441,13 +443,14 @@ class DeviceScreenUI {
       context: context,
       state: state,
       onShowAddDeviceModal: onShowAddDeviceModal,
-      onShowDevicesModal: () => _showDevicesModal(
-        context: context,
-        state: state,
-        onLoadDevices: onLoadDevices,
-        onDeleteDevice: onDeleteDevice,
-        onCenterMapOnDevice: onCenterMapOnDevice,
-      ),
+      onShowDevicesModal:
+          () => _showDevicesModal(
+            context: context,
+            state: state,
+            onLoadDevices: onLoadDevices,
+            onDeleteDevice: onDeleteDevice,
+            onCenterMapOnDevice: onCenterMapOnDevice,
+          ),
       onLoadDevices: onLoadDevices,
     );
   }
@@ -507,9 +510,13 @@ class DeviceScreenUI {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   ShaderMask(
-                                    shaderCallback: (bounds) => const LinearGradient(
-                                      colors: [Colors.white, Color(0xFFFFB74D)],
-                                    ).createShader(bounds),
+                                    shaderCallback:
+                                        (bounds) => const LinearGradient(
+                                          colors: [
+                                            Colors.white,
+                                            Color(0xFFFFB74D),
+                                          ],
+                                        ).createShader(bounds),
                                     child: const Text(
                                       'Control Center',
                                       style: TextStyle(
@@ -525,7 +532,8 @@ class DeviceScreenUI {
                                     'Manage devices and monitor activity',
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: DeviceScreenColors.textSecondary.withOpacity(0.8),
+                                      color: DeviceScreenColors.textSecondary
+                                          .withOpacity(0.8),
                                       height: 1.4,
                                     ),
                                   ),
@@ -541,7 +549,7 @@ class DeviceScreenUI {
               },
             ),
             const SizedBox(height: 28),
-            
+
             // Enhanced Stats Container with glass effect
             TweenAnimationBuilder<double>(
               tween: Tween(begin: 0.0, end: 1.0),
@@ -557,9 +565,9 @@ class DeviceScreenUI {
                 );
               },
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             // Enhanced Quick Actions
             TweenAnimationBuilder<double>(
               tween: Tween(begin: 0.0, end: 1.0),
@@ -598,10 +606,7 @@ class DeviceScreenUI {
           ],
         ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.1),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.3),
@@ -717,9 +722,9 @@ class DeviceScreenUI {
           subtitle: 'Register a device to track',
           delay: 0,
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // View Devices Card
         _EnhancedDeviceListCard(
           onTap: onShowDevicesModal,
@@ -740,155 +745,186 @@ class DeviceScreenUI {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0.0, end: 1.0),
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeOutCubic,
-        builder: (context, value, child) {
-          return Transform.translate(
-            offset: Offset(0, MediaQuery.of(context).size.height * (1 - value.clamp(0.0, 1.0)) * 0.3),
-            child: Opacity(
-              opacity: value.clamp(0.0, 1.0),
-              child: DraggableScrollableSheet(
-                initialChildSize: 0.9,
-                minChildSize: 0.5,
-                maxChildSize: 0.95,
-                builder: (context, scrollController) => Container(
-                  decoration: BoxDecoration(
-                    color: DeviceScreenColors.darkBackground,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(32),
-                      topRight: Radius.circular(32),
-                    ),
-                    border: Border(
-                      top: BorderSide(
-                        color: const Color(0xFFFF6B35).withOpacity(0.3),
-                        width: 2,
-                      ),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.5),
-                        blurRadius: 30,
-                        offset: const Offset(0, -10),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      // Elegant handle bar
-                      Container(
-                        margin: const EdgeInsets.only(top: 16, bottom: 8),
-                        width: 50,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFFF6B35), Color(0xFFFF9800)],
+      builder:
+          (context) => TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) {
+              return Transform.translate(
+                offset: Offset(
+                  0,
+                  MediaQuery.of(context).size.height *
+                      (1 - value.clamp(0.0, 1.0)) *
+                      0.3,
+                ),
+                child: Opacity(
+                  opacity: value.clamp(0.0, 1.0),
+                  child: DraggableScrollableSheet(
+                    initialChildSize: 0.9,
+                    minChildSize: 0.5,
+                    maxChildSize: 0.95,
+                    builder:
+                        (context, scrollController) => Container(
+                          decoration: BoxDecoration(
+                            color: DeviceScreenColors.darkBackground,
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(32),
+                              topRight: Radius.circular(32),
+                            ),
+                            border: Border(
+                              top: BorderSide(
+                                color: const Color(0xFFFF6B35).withOpacity(0.3),
+                                width: 2,
+                              ),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.5),
+                                blurRadius: 30,
+                                offset: const Offset(0, -10),
+                              ),
+                            ],
                           ),
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                      ),
-                      // Enhanced Header
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)],
+                          child: Column(
+                            children: [
+                              // Elegant handle bar
+                              Container(
+                                margin: const EdgeInsets.only(
+                                  top: 16,
+                                  bottom: 8,
                                 ),
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF4CAF50).withOpacity(0.4),
-                                    blurRadius: 12,
+                                width: 50,
+                                height: 5,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFFFF6B35),
+                                      Color(0xFFFF9800),
+                                    ],
                                   ),
-                                ],
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
                               ),
-                              child: const Icon(
-                                Icons.devices_rounded,
-                                color: Colors.white,
-                                size: 28,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'My Devices',
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: DeviceScreenColors.textPrimary,
-                                      letterSpacing: 0.3,
+                              // Enhanced Header
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  24,
+                                  12,
+                                  24,
+                                  20,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(14),
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [
+                                            Color(0xFF4CAF50),
+                                            Color(0xFF66BB6A),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(16),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(
+                                              0xFF4CAF50,
+                                            ).withOpacity(0.4),
+                                            blurRadius: 12,
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Icon(
+                                        Icons.devices_rounded,
+                                        color: Colors.white,
+                                        size: 28,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '${state.devices.length} device${state.devices.length != 1 ? 's' : ''} registered',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: DeviceScreenColors.textSecondary.withOpacity(0.8),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'My Devices',
+                                            style: TextStyle(
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.bold,
+                                              color:
+                                                  DeviceScreenColors
+                                                      .textPrimary,
+                                              letterSpacing: 0.3,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            '${state.devices.length} device${state.devices.length != 1 ? 's' : ''} registered',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: DeviceScreenColors
+                                                  .textSecondary
+                                                  .withOpacity(0.8),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: DeviceScreenColors.surfaceColor,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: IconButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        icon: const Icon(Icons.close_rounded),
+                                        color: DeviceScreenColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Elegant Divider
+                              Container(
+                                height: 1,
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                ),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.white.withOpacity(0.15),
+                                      Colors.transparent,
+                                    ],
                                   ),
-                                ],
+                                ),
                               ),
-                            ),
-                            Container(
-                              decoration: BoxDecoration(
-                                color: DeviceScreenColors.surfaceColor,
-                                borderRadius: BorderRadius.circular(12),
+                              const SizedBox(height: 16),
+                              // Device List
+                              Expanded(
+                                child: RefreshIndicator(
+                                  onRefresh: onLoadDevices,
+                                  color: DeviceScreenColors.primaryOrange,
+                                  backgroundColor:
+                                      DeviceScreenColors.cardBackground,
+                                  child: DeviceListWidget(
+                                    devices: state.devices,
+                                    deviceLocations: state.deviceLocations,
+                                    onDeleteDevice: onDeleteDevice,
+                                    onCenterMapOnDevice: onCenterMapOnDevice,
+                                  ),
+                                ),
                               ),
-                              child: IconButton(
-                                onPressed: () => Navigator.pop(context),
-                                icon: const Icon(Icons.close_rounded),
-                                color: DeviceScreenColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Elegant Divider
-                      Container(
-                        height: 1,
-                        margin: const EdgeInsets.symmetric(horizontal: 24),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.transparent,
-                              Colors.white.withOpacity(0.15),
-                              Colors.transparent,
                             ],
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Device List
-                      Expanded(
-                        child: RefreshIndicator(
-                          onRefresh: onLoadDevices,
-                          color: DeviceScreenColors.primaryOrange,
-                          backgroundColor: DeviceScreenColors.cardBackground,
-                          child: DeviceListWidget(
-                            devices: state.devices,
-                            deviceLocations: state.deviceLocations,
-                            onDeleteDevice: onDeleteDevice,
-                            onCenterMapOnDevice: onCenterMapOnDevice,
-                          ),
-                        ),
-                      ),
-                    ],
                   ),
                 ),
-              ),
-            ),
-          );
-        },
-      ),
+              );
+            },
+          ),
     );
   }
 
@@ -936,6 +972,8 @@ class DeviceScreenUI {
       onDeleteGeofence: onDeleteGeofence,
       showHistoryPoints: showHistoryPoints,
       onToggleHistoryPoints: onToggleHistoryPoints,
+      snappedPaths: state.snappedPaths,
+      showSnappedPaths: state.showSnappedPaths,
     );
   }
 
@@ -989,9 +1027,10 @@ class DeviceScreenUI {
                         _FloatingIconWidget(),
                         const SizedBox(height: 32),
                         ShaderMask(
-                          shaderCallback: (bounds) => const LinearGradient(
-                            colors: [Color(0xFFFF6B35), Color(0xFFFF9800)],
-                          ).createShader(bounds),
+                          shaderCallback:
+                              (bounds) => const LinearGradient(
+                                colors: [Color(0xFFFF6B35), Color(0xFFFF9800)],
+                              ).createShader(bounds),
                           child: const Text(
                             'No Devices Yet',
                             style: TextStyle(
@@ -1008,7 +1047,9 @@ class DeviceScreenUI {
                           'Start your tracking journey by adding\nyour first device to monitor',
                           style: TextStyle(
                             fontSize: 15,
-                            color: DeviceScreenColors.textSecondary.withOpacity(0.8),
+                            color: DeviceScreenColors.textSecondary.withOpacity(
+                              0.8,
+                            ),
                             height: 1.6,
                           ),
                           textAlign: TextAlign.center,
@@ -1051,14 +1092,16 @@ class _PulsingIconWidgetState extends State<_PulsingIconWidget>
       duration: const Duration(milliseconds: 2000),
       vsync: this,
     )..repeat(reverse: true);
-    
-    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-    
-    _glowAnimation = Tween<double>(begin: 0.3, end: 0.6).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+
+    _scaleAnimation = Tween<double>(
+      begin: 0.95,
+      end: 1.05,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+
+    _glowAnimation = Tween<double>(
+      begin: 0.3,
+      end: 0.6,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -1077,7 +1120,9 @@ class _PulsingIconWidgetState extends State<_PulsingIconWidget>
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFFF6B35).withOpacity(_glowAnimation.value),
+                color: const Color(
+                  0xFFFF6B35,
+                ).withOpacity(_glowAnimation.value),
                 blurRadius: 40 * _scaleAnimation.value,
                 spreadRadius: 10 * _scaleAnimation.value,
               ),
@@ -1134,14 +1179,16 @@ class _FloatingIconWidgetState extends State<_FloatingIconWidget>
       duration: const Duration(milliseconds: 3000),
       vsync: this,
     )..repeat(reverse: true);
-    
-    _floatAnimation = Tween<double>(begin: -12.0, end: 12.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-    
-    _rotateAnimation = Tween<double>(begin: -0.05, end: 0.05).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+
+    _floatAnimation = Tween<double>(
+      begin: -12.0,
+      end: 12.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+
+    _rotateAnimation = Tween<double>(
+      begin: -0.05,
+      end: 0.05,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -1271,17 +1318,14 @@ class _EnhancedStatCardState extends State<_EnhancedStatCard> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: (widget.gradient.colors.first as Color).withOpacity(0.4),
+                          color: (widget.gradient.colors.first as Color)
+                              .withOpacity(0.4),
                           blurRadius: 12,
                           spreadRadius: 2,
                         ),
                       ],
                     ),
-                    child: Icon(
-                      widget.icon,
-                      size: 28,
-                      color: Colors.white,
-                    ),
+                    child: Icon(widget.icon, size: 28, color: Colors.white),
                   ),
                   const SizedBox(height: 12),
                   TweenAnimationBuilder<int>(
@@ -1290,7 +1334,8 @@ class _EnhancedStatCardState extends State<_EnhancedStatCard> {
                     curve: Curves.easeOutCubic,
                     builder: (context, intValue, child) {
                       return ShaderMask(
-                        shaderCallback: (bounds) => widget.gradient.createShader(bounds),
+                        shaderCallback:
+                            (bounds) => widget.gradient.createShader(bounds),
                         child: Text(
                           intValue.toString(),
                           style: const TextStyle(
@@ -1358,12 +1403,14 @@ class _EnhancedActionCardState extends State<_EnhancedActionCard>
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.96).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-    _elevationAnimation = Tween<double>(begin: 1.0, end: 0.5).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.96,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _elevationAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.5,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -1393,13 +1440,16 @@ class _EnhancedActionCardState extends State<_EnhancedActionCard>
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: (widget.gradient.colors.first as Color)
-                        .withOpacity(0.5 * _elevationAnimation.value),
+                    color: (widget.gradient.colors.first as Color).withOpacity(
+                      0.5 * _elevationAnimation.value,
+                    ),
                     blurRadius: 20 * _elevationAnimation.value,
                     offset: Offset(0, 8 * _elevationAnimation.value),
                   ),
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.3 * _elevationAnimation.value),
+                    color: Colors.black.withOpacity(
+                      0.3 * _elevationAnimation.value,
+                    ),
                     blurRadius: 12 * _elevationAnimation.value,
                     offset: Offset(0, 4 * _elevationAnimation.value),
                   ),
@@ -1413,11 +1463,7 @@ class _EnhancedActionCardState extends State<_EnhancedActionCard>
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Icon(
-                      widget.icon,
-                      color: Colors.white,
-                      size: 28,
-                    ),
+                    child: Icon(widget.icon, color: Colors.white, size: 28),
                   ),
                   const SizedBox(width: 18),
                   Expanded(
@@ -1495,9 +1541,10 @@ class _EnhancedPrimaryButtonState extends State<_EnhancedPrimaryButton>
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -1586,9 +1633,10 @@ class _EnhancedDeviceListCardState extends State<_EnhancedDeviceListCard>
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.98,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -1681,7 +1729,9 @@ class _EnhancedDeviceListCardState extends State<_EnhancedDeviceListCard>
                           '${widget.deviceCount} device${widget.deviceCount != 1 ? 's' : ''} available',
                           style: TextStyle(
                             fontSize: 13,
-                            color: DeviceScreenColors.textSecondary.withOpacity(0.8),
+                            color: DeviceScreenColors.textSecondary.withOpacity(
+                              0.8,
+                            ),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -1713,9 +1763,6 @@ class _EnhancedDeviceListCardState extends State<_EnhancedDeviceListCard>
 // Extension to add decoratedBox functionality
 extension WidgetExtension on Widget {
   Widget decoratedBox({required BoxDecoration decoration}) {
-    return DecoratedBox(
-      decoration: decoration,
-      child: this,
-    );
+    return DecoratedBox(decoration: decoration, child: this);
   }
 }

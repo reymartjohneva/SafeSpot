@@ -28,7 +28,7 @@ class DeviceMapWidget extends StatelessWidget {
   final Function(TapPosition, LatLng) onMapTap;
   final Function(TapPosition, LatLng) onMapLongPress;
   final Device? Function(String) findDeviceById;
-  
+
   // Added geofence control callbacks
   final VoidCallback onStartDrawing;
   final VoidCallback onStopDrawing;
@@ -36,10 +36,14 @@ class DeviceMapWidget extends StatelessWidget {
   final VoidCallback onLoadGeofences;
   final Future<void> Function(String, bool) onToggleGeofenceStatus;
   final Future<void> Function(String, int) onDeleteGeofence;
-  
+
   // NEW: History points visibility
   final bool showHistoryPoints;
   final VoidCallback onToggleHistoryPoints;
+
+  // Road-snapped paths
+  final Map<String, List<LatLng>> snappedPaths;
+  final bool showSnappedPaths;
 
   const DeviceMapWidget({
     Key? key,
@@ -68,6 +72,8 @@ class DeviceMapWidget extends StatelessWidget {
     required this.onDeleteGeofence,
     required this.showHistoryPoints,
     required this.onToggleHistoryPoints,
+    this.snappedPaths = const {},
+    this.showSnappedPaths = true,
   }) : super(key: key);
 
   @override
@@ -78,14 +84,18 @@ class DeviceMapWidget extends StatelessWidget {
           children: [
             // Drawing instructions overlay
             if (isDrawingGeofence) _buildDrawingInstructions(context),
-            
+
             // Main Map with Layers
             FlutterMap(
               mapController: mapController,
               options: MapOptions(
-                center: currentPosition != null
-                    ? LatLng(currentPosition!.latitude, currentPosition!.longitude)
-                    : LatLng(8.9511, 125.5439),
+                center:
+                    currentPosition != null
+                        ? LatLng(
+                          currentPosition!.latitude,
+                          currentPosition!.longitude,
+                        )
+                        : LatLng(8.9511, 125.5439),
                 zoom: 13.0,
                 minZoom: 5.0,
                 maxZoom: 18.0,
@@ -98,7 +108,7 @@ class DeviceMapWidget extends StatelessWidget {
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.example.safespot',
                 ),
-                
+
                 // All map layers in a separate widget
                 MapLayers(
                   geofences: geofences,
@@ -111,7 +121,9 @@ class DeviceMapWidget extends StatelessWidget {
                   selectedDeviceId: selectedDeviceId,
                   findDeviceById: findDeviceById,
                   onDeviceSelected: onDeviceSelected,
-                  showHistoryPoints: showHistoryPoints, // PASS IT HERE
+                  showHistoryPoints: showHistoryPoints,
+                  snappedPaths: snappedPaths,
+                  showSnappedPaths: showSnappedPaths,
                 ),
 
                 // Device info popup
@@ -177,9 +189,10 @@ class DeviceMapWidget extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: isDragging 
-              ? Colors.orange.shade100.withOpacity(0.95) 
-              : Colors.orange.shade50.withOpacity(0.95),
+          color:
+              isDragging
+                  ? Colors.orange.shade100.withOpacity(0.95)
+                  : Colors.orange.shade50.withOpacity(0.95),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: Colors.orange.shade300.withOpacity(0.5),
@@ -238,27 +251,28 @@ class DeviceMapWidget extends StatelessWidget {
 
   void _fitMapToBounds() {
     final allPoints = <LatLng>[];
-    
+
     if (currentPosition != null) {
-      allPoints.add(LatLng(currentPosition!.latitude, currentPosition!.longitude));
+      allPoints.add(
+        LatLng(currentPosition!.latitude, currentPosition!.longitude),
+      );
     }
-    
+
     for (var device in devices) {
       final locations = deviceLocations[device.deviceId];
       if (locations != null && locations.isNotEmpty) {
-        allPoints.add(LatLng(
-          locations.first.latitude,
-          locations.first.longitude,
-        ));
+        allPoints.add(
+          LatLng(locations.first.latitude, locations.first.longitude),
+        );
       }
     }
-    
+
     for (var geofence in geofences) {
       if (geofence.points.isNotEmpty) {
         allPoints.addAll(geofence.points);
       }
     }
-    
+
     if (allPoints.isNotEmpty) {
       double minLat = allPoints.first.latitude;
       double maxLat = allPoints.first.latitude;
@@ -279,10 +293,7 @@ class DeviceMapWidget extends StatelessWidget {
       maxLng += padding;
 
       mapController.fitBounds(
-        LatLngBounds(
-          LatLng(minLat, minLng),
-          LatLng(maxLat, maxLng),
-        ),
+        LatLngBounds(LatLng(minLat, minLng), LatLng(maxLat, maxLng)),
         options: const FitBoundsOptions(padding: EdgeInsets.all(50)),
       );
     }

@@ -120,8 +120,9 @@ class NotificationService {
     }
 
     return _client
-        .from('notifications:user_id=eq.$currentUserId')
+        .from('notifications')
         .stream(primaryKey: ['id'])
+        .eq('user_id', currentUserId!)
         .order('created_at', ascending: false)
         .map((data) => data.map((json) => AppNotification.fromJson(json)).toList());
   }

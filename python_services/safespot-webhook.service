@@ -1,0 +1,17 @@
+[Unit]
+Description=SafeSpot Firebase to Supabase Realtime Migration Service
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/SafeSpot/python_services
+Environment="PATH=/usr/bin:/usr/local/bin"
+ExecStart=/usr/bin/python3 /home/ubuntu/SafeSpot/python_services/firebase_realtime_webhook.py
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/safespot-webhook.log
+StandardError=append:/var/log/safespot-webhook.error.log
+
+[Install]
+WantedBy=multi-user.target

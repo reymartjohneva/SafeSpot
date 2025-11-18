@@ -51,6 +51,11 @@ class DeviceScreenStateData {
   // NEW: History points visibility state
   bool showHistoryPoints = true;
 
+  // Road-snapped paths
+  Map<String, List<LatLng>> snappedPaths = {};
+  bool isSnappingToRoads = false;
+  bool showSnappedPaths = true;
+
   void dispose() {
     refreshTimer?.cancel();
     deviceIdController.dispose();

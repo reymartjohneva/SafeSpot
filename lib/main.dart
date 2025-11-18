@@ -13,15 +13,18 @@ import 'screens/notification_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   await Supabase.initialize(
     url: 'https://zbnnusmjpwvtsigvvlha.supabase.co',
     anonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpibm51c21qcHd2dHNpZ3Z2bGhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3NTgwODQsImV4cCI6MjA2OTMzNDA4NH0.GWG-9PLnpYU2-foc8wI7fzPza746TGVgmMgab2geZvk',
   );
 
-  FirebaseSyncService.startAutoSync(interval: const Duration(minutes: 5));
+  // Start CONTINUOUS realtime sync from Firebase to Supabase (every 2 seconds)
+  FirebaseSyncService.startRealtimeSync();
 
+  // Also start periodic sync as fallback (every 5 minutes)
+  FirebaseSyncService.startAutoSync(interval: const Duration(minutes: 5));
   runApp(const MyApp());
 }
 
@@ -60,7 +63,9 @@ class MyApp extends StatelessWidget {
       home: const SplashScreen(), // Changed to custom splash
       routes: {
         '/login': (context) => const LoginPage(),
-        '/home': (context) => const AuthenticatedRoute(child: MainNavigationScreen()),
+        '/home':
+            (context) =>
+                const AuthenticatedRoute(child: MainNavigationScreen()),
         '/register': (context) => const RegistrationPage(),
       },
     );
@@ -89,13 +94,15 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 0.5,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
 
     _controller.forward();
 
@@ -150,7 +157,7 @@ class _SplashScreenState extends State<SplashScreen>
               left: -30,
               child: _buildFloatingCircle(150, 4),
             ),
-            
+
             // Main content
             Center(
               child: Column(
@@ -169,9 +176,9 @@ class _SplashScreenState extends State<SplashScreen>
                       );
                     },
                   ),
-                  
+
                   const SizedBox(height: 40),
-                  
+
                   // App name with fade animation
                   FadeTransition(
                     opacity: _fadeAnimation,
@@ -192,9 +199,9 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 10),
-                  
+
                   // Tagline
                   FadeTransition(
                     opacity: _fadeAnimation,
@@ -265,10 +272,7 @@ class _SplashScreenState extends State<SplashScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.grey.shade100,
-              Colors.white,
-            ],
+            colors: [Colors.grey.shade100, Colors.white],
           ),
         ),
         child: Center(
@@ -276,13 +280,8 @@ class _SplashScreenState extends State<SplashScreen>
             child: Container(
               width: 130,
               height: 130,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-              ),
-              child: Image.asset(
-                'assets/app1_icon.png',
-                fit: BoxFit.cover,
-              ),
+              decoration: const BoxDecoration(shape: BoxShape.circle),
+              child: Image.asset('assets/app1_icon.png', fit: BoxFit.cover),
             ),
           ),
         ),
@@ -309,7 +308,9 @@ class AuthWrapper extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -356,7 +357,9 @@ class AuthenticatedRoute extends StatelessWidget {
       return child;
     } else {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
       });
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }

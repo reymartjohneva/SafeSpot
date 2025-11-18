@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:safe_spot/screens/notification_components/notification_colors.dart';
 
-class NotificationAppBar extends StatelessWidget implements PreferredSizeWidget {
+class NotificationAppBar extends StatelessWidget
+    implements PreferredSizeWidget {
   final int unreadCount;
   final VoidCallback onMarkAllAsRead;
   final VoidCallback onDeleteOld;
+  final VoidCallback? onDebug;
+  final VoidCallback? onForceCheck;
 
   const NotificationAppBar({
     Key? key,
     required this.unreadCount,
     required this.onMarkAllAsRead,
     required this.onDeleteOld,
+    this.onDebug,
+    this.onForceCheck,
   }) : super(key: key);
 
   @override
@@ -32,10 +37,7 @@ class NotificationAppBar extends StatelessWidget implements PreferredSizeWidget 
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFFFF6B35),
-                    Color(0xFFFF9800),
-                  ],
+                  colors: [Color(0xFFFF6B35), Color(0xFFFF9800)],
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
@@ -71,12 +73,10 @@ class NotificationAppBar extends StatelessWidget implements PreferredSizeWidget 
                     children: [
                       Flexible(
                         child: ShaderMask(
-                          shaderCallback: (bounds) => const LinearGradient(
-                            colors: [
-                              Colors.white,
-                              Color(0xFFFF9800),
-                            ],
-                          ).createShader(bounds),
+                          shaderCallback:
+                              (bounds) => const LinearGradient(
+                                colors: [Colors.white, Color(0xFFFF9800)],
+                              ).createShader(bounds),
                           child: const Text(
                             'Notifications',
                             style: TextStyle(
@@ -98,10 +98,7 @@ class NotificationAppBar extends StatelessWidget implements PreferredSizeWidget 
                           ),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                              colors: [
-                                Color(0xFFFF6B35),
-                                Color(0xFFFF9800),
-                              ],
+                              colors: [Color(0xFFFF6B35), Color(0xFFFF9800)],
                             ),
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
@@ -142,10 +139,7 @@ class NotificationAppBar extends StatelessWidget implements PreferredSizeWidget 
             color: NotificationColors.cardBackground,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              side: BorderSide(
-                color: const Color(0xFF404040),
-                width: 1,
-              ),
+              side: BorderSide(color: const Color(0xFF404040), width: 1),
             ),
             elevation: 8,
             offset: const Offset(0, 8),
@@ -154,69 +148,122 @@ class NotificationAppBar extends StatelessWidget implements PreferredSizeWidget 
                 onMarkAllAsRead();
               } else if (value == 'delete_old') {
                 onDeleteOld();
+              } else if (value == 'debug' && onDebug != null) {
+                onDebug!();
+              } else if (value == 'force_check' && onForceCheck != null) {
+                onForceCheck!();
               }
             },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'mark_all_read',
-                height: 48,
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: NotificationColors.primaryOrange.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.done_all_rounded,
-                        color: NotificationColors.primaryOrange,
-                        size: 18,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'Mark all as read',
-                      style: TextStyle(
-                        color: NotificationColors.textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
+            itemBuilder:
+                (context) => [
+                  if (onForceCheck != null)
+                    PopupMenuItem(
+                      value: 'force_check',
+                      height: 48,
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.refresh_rounded,
+                              color: Colors.blue,
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(height: 1),
-              PopupMenuItem(
-                value: 'delete_old',
-                height: 48,
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.delete_sweep_rounded,
-                        color: Colors.red,
-                        size: 18,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'Delete old',
-                      style: TextStyle(
-                        color: NotificationColors.textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
+                  if (onDebug != null)
+                    PopupMenuItem(
+                      value: 'debug',
+                      height: 48,
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.purple.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.bug_report_rounded,
+                              color: Colors.purple,
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ],
+                  if (onDebug != null || onForceCheck != null)
+                    const PopupMenuDivider(height: 1),
+                  PopupMenuItem(
+                    value: 'mark_all_read',
+                    height: 48,
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: NotificationColors.primaryOrange.withOpacity(
+                              0.15,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.done_all_rounded,
+                            color: NotificationColors.primaryOrange,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Mark all as read',
+                          style: TextStyle(
+                            color: NotificationColors.textPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuDivider(height: 1),
+                  PopupMenuItem(
+                    value: 'delete_old',
+                    height: 48,
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.delete_sweep_rounded,
+                            color: Colors.red,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Delete old',
+                          style: TextStyle(
+                            color: NotificationColors.textPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
           ),
         ),
       ],

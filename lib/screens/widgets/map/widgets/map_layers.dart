@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:safe_spot/services/device_service.dart';
 import 'package:safe_spot/services/geofence_service.dart';
 import 'package:safe_spot/utils/device_utils.dart';
+import 'package:safe_spot/widgets/snapped_path_layer.dart';
 
 class MapLayers extends StatelessWidget {
   final List<Geofence> geofences;
@@ -18,6 +19,8 @@ class MapLayers extends StatelessWidget {
   final Device? Function(String) findDeviceById;
   final Function(String?) onDeviceSelected;
   final bool showHistoryPoints;
+  final Map<String, List<LatLng>> snappedPaths;
+  final bool showSnappedPaths;
 
   const MapLayers({
     Key? key,
@@ -32,6 +35,8 @@ class MapLayers extends StatelessWidget {
     required this.findDeviceById,
     required this.onDeviceSelected,
     required this.showHistoryPoints,
+    this.snappedPaths = const {},
+    this.showSnappedPaths = true,
   }) : super(key: key);
 
   @override
@@ -48,6 +53,16 @@ class MapLayers extends StatelessWidget {
         // Connection lines between geofence points
         if (currentGeofencePoints.length >= 2)
           PolylineLayer(polylines: _buildGeofencePolylines()),
+
+        // Road-snapped paths (NEW)
+        if (showSnappedPaths && snappedPaths.isNotEmpty)
+          MultiPathLayer(
+            devicePaths: snappedPaths,
+            deviceColors: _buildDeviceColors(),
+            selectedDeviceId: selectedDeviceId,
+            pathWidth: 5.0,
+            showDirectionArrows: true,
+          ),
 
         // Device location history lines - ONLY SHOW IF showHistoryPoints IS TRUE
         if (showHistoryPoints)
@@ -69,6 +84,14 @@ class MapLayers extends StatelessWidget {
         MarkerLayer(markers: _buildLatestDeviceLocationMarkers()),
       ],
     );
+  }
+
+  Map<String, Color> _buildDeviceColors() {
+    final colors = <String, Color>{};
+    for (final device in devices) {
+      colors[device.deviceId] = DeviceUtils.getDeviceColor(device.deviceId);
+    }
+    return colors;
   }
 
   List<Polygon> _buildGeofencePolygons() {

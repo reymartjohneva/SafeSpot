@@ -10,6 +10,8 @@ import 'screens/profile_screen.dart';
 import 'widgets/nav_bar.dart';
 import 'screens/emergency_hotlines_screen.dart';
 import 'screens/notification_screen.dart';
+import 'services/notification_service.dart';
+import 'dart:async';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -60,7 +62,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const SplashScreen(), // Changed to custom splash
+      home: const SplashScreen(),
       routes: {
         '/login': (context) => const LoginPage(),
         '/home':
@@ -379,6 +381,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
   int _selectedIndex = 0;
   late PageController _pageController;
   late AnimationController _animationController;
+  StreamSubscription? _notificationSubscription;
+  Set<String> _shownNotificationIds = {};
 
   final List<Widget> _screens = [
     const DeviceScreen(),
@@ -397,6 +401,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     );
 
     _initializeGeofenceMonitoring();
+    _subscribeToNotifications();
   }
 
   Future<void> _initializeGeofenceMonitoring() async {
@@ -408,10 +413,570 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     }
   }
 
+  void _subscribeToNotifications() {
+    try {
+      _notificationSubscription = NotificationService.subscribeToNotifications()
+          .listen((notifications) {
+        if (notifications.isEmpty) return;
+
+        // Get the most recent notification
+        final latestNotification = notifications.first;
+        
+        // Only show popup for unread notifications we haven't shown yet
+        if (!latestNotification.isRead && 
+            !_shownNotificationIds.contains(latestNotification.id)) {
+          _shownNotificationIds.add(latestNotification.id);
+          _showNotificationDialog(latestNotification);
+        }
+      });
+    } catch (e) {
+      print('❌ Error subscribing to notifications: $e');
+    }
+  }
+
+  void _showNotificationDialog(AppNotification notification) {
+    if (!mounted) return;
+
+    // Determine icon and colors based on notification type
+    IconData icon;
+    Color primaryColor;
+    Color secondaryColor;
+    String typeLabel;
+
+    if (notification.notificationType == 'geofence_entry') {
+      icon = Icons.login_rounded;
+      primaryColor = const Color(0xFF4CAF50);
+      secondaryColor = const Color(0xFF81C784);
+      typeLabel = 'ENTRY';
+    } else if (notification.notificationType == 'geofence_exit') {
+      icon = Icons.logout_rounded;
+      primaryColor = const Color(0xFFFF9800);
+      secondaryColor = const Color(0xFFFFB74D);
+      typeLabel = 'EXIT';
+    } else {
+      icon = Icons.notifications_active_rounded;
+      primaryColor = const Color(0xFF2196F3);
+      secondaryColor = const Color(0xFF64B5F6);
+      typeLabel = 'ALERT';
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.6),
+      builder: (BuildContext context) {
+        return TweenAnimationBuilder<double>(
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.elasticOut,
+          tween: Tween(begin: 0.0, end: 1.0),
+          builder: (context, value, child) {
+            return Transform.scale(
+              scale: value,
+              child: Dialog(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: primaryColor.withOpacity(0.3),
+                        blurRadius: 30,
+                        offset: const Offset(0, 10),
+                        spreadRadius: 5,
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      // Gradient background decoration
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          height: 120,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                primaryColor.withOpacity(0.1),
+                                secondaryColor.withOpacity(0.05),
+                              ],
+                            ),
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(28),
+                              topRight: Radius.circular(28),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Animated floating circles
+                      Positioned(
+                        top: -20,
+                        right: 30,
+                        child: _buildAnimatedCircle(40, primaryColor.withOpacity(0.2), 1),
+                      ),
+                      Positioned(
+                        top: 50,
+                        right: -10,
+                        child: _buildAnimatedCircle(60, secondaryColor.withOpacity(0.15), 2),
+                      ),
+                      Positioned(
+                        top: 10,
+                        left: 20,
+                        child: _buildAnimatedCircle(30, primaryColor.withOpacity(0.1), 1.5),
+                      ),
+
+                      // Main content
+                      Padding(
+                        padding: const EdgeInsets.all(28),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Animated icon with pulse effect
+                            TweenAnimationBuilder<double>(
+                              duration: const Duration(milliseconds: 600),
+                              curve: Curves.easeOut,
+                              tween: Tween(begin: 0.0, end: 1.0),
+                              builder: (context, value, child) {
+                                return Transform.scale(
+                                  scale: 0.8 + (value * 0.2),
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      // Outer pulse ring
+                                      Container(
+                                        width: 120,
+                                        height: 120,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          gradient: RadialGradient(
+                                            colors: [
+                                              primaryColor.withOpacity(0.0),
+                                              primaryColor.withOpacity(0.1 * value),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      // Middle ring
+                                      Container(
+                                        width: 95,
+                                        height: 95,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                            colors: [
+                                              primaryColor.withOpacity(0.15),
+                                              secondaryColor.withOpacity(0.15),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      // Inner icon container
+                                      Container(
+                                        width: 75,
+                                        height: 75,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                            colors: [primaryColor, secondaryColor],
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: primaryColor.withOpacity(0.4),
+                                              blurRadius: 20,
+                                              offset: const Offset(0, 8),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Icon(
+                                          icon,
+                                          size: 38,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                            
+                            const SizedBox(height: 24),
+
+                            // Type badge
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [primaryColor, secondaryColor],
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: primaryColor.withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                typeLabel,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: 1.5,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 16),
+                            
+                            // Title with animation
+                            TweenAnimationBuilder<double>(
+                              duration: const Duration(milliseconds: 500),
+                              curve: Curves.easeOut,
+                              tween: Tween(begin: 0.0, end: 1.0),
+                              builder: (context, value, child) {
+                                return Opacity(
+                                  opacity: value,
+                                  child: Transform.translate(
+                                    offset: Offset(0, 20 * (1 - value)),
+                                    child: Text(
+                                      notification.title,
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF1A1A1A),
+                                        height: 1.3,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            
+                            const SizedBox(height: 8),
+                            
+                            // Timestamp with icon
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.access_time_rounded,
+                                  size: 14,
+                                  color: Colors.grey.shade500,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _formatNotificationTime(notification.createdAt),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey.shade600,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            
+                            const SizedBox(height: 20),
+                            
+                            // Decorative divider
+                            Container(
+                              height: 1,
+                              margin: const EdgeInsets.symmetric(horizontal: 20),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.grey.shade300,
+                                    Colors.transparent,
+                                  ],
+                                ),
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 20),
+                            
+                            // Message
+                            Text(
+                              notification.message,
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Colors.grey.shade700,
+                                height: 1.6,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            
+                            // Location info if available
+                            if (notification.metadata != null && 
+                                notification.metadata!['geofence_name'] != null) ...[
+                              const SizedBox(height: 20),
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      primaryColor.withOpacity(0.08),
+                                      secondaryColor.withOpacity(0.08),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: primaryColor.withOpacity(0.2),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(10),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: primaryColor.withOpacity(0.2),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Icon(
+                                        Icons.location_on_rounded,
+                                        size: 20,
+                                        color: primaryColor,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Flexible(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Location',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.grey.shade600,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            notification.metadata!['geofence_name'] as String,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey.shade800,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            
+                            const SizedBox(height: 28),
+                            
+                            // Action buttons
+                            Row(
+                              children: [
+                                // View Details button
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                      // Navigate to notifications screen
+                                      setState(() {
+                                        _selectedIndex = 2;
+                                      });
+                                      _pageController.jumpToPage(2);
+                                    },
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: primaryColor,
+                                      side: BorderSide(color: primaryColor, width: 2),
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'View All',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                
+                                const SizedBox(width: 12),
+                                
+                                // OK button with gradient
+                                Expanded(
+                                  flex: 2,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [primaryColor, secondaryColor],
+                                      ),
+                                      borderRadius: BorderRadius.circular(14),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: primaryColor.withOpacity(0.4),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 6),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                        NotificationService.markAsRead(notification.id);
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.transparent,
+                                        foregroundColor: Colors.white,
+                                        shadowColor: Colors.transparent,
+                                        padding: const EdgeInsets.symmetric(vertical: 16),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(14),
+                                        ),
+                                      ),
+                                      child: const Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            'Got it',
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          SizedBox(width: 8),
+                                          Icon(Icons.check_circle_rounded, size: 20),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Close button (X)
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.of(context).pop();
+                              NotificationService.markAsRead(notification.id);
+                            },
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.close_rounded,
+                                size: 18,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Helper widget for floating animated circles in notification dialog
+  Widget _buildAnimatedCircle(double size, Color color, double delay) {
+    return TweenAnimationBuilder<double>(
+      duration: Duration(milliseconds: (2000 * delay).toInt()),
+      curve: Curves.easeInOut,
+      tween: Tween(begin: 0.0, end: 1.0),
+      builder: (context, value, child) {
+        return Transform.translate(
+          offset: Offset(
+            10 * (value - 0.5) * 2,
+            -15 * value,
+          ),
+          child: Opacity(
+            opacity: 0.6 - (value * 0.3),
+            child: Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: color,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _formatNotificationTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inSeconds < 60) {
+      return 'Just now';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} min ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
+    } else {
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final hour = dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour;
+      final amPm = dateTime.hour >= 12 ? 'PM' : 'AM';
+      return '${months[dateTime.month - 1]} ${dateTime.day}, ${hour}:${dateTime.minute.toString().padLeft(2, '0')} $amPm';
+    }
+  }
+
   @override
   void dispose() {
     _pageController.dispose();
     _animationController.dispose();
+    _notificationSubscription?.cancel();
     GeofenceMonitorService.dispose();
     super.dispose();
   }

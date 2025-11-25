@@ -11,7 +11,8 @@ class EmergencyHotlinesScreen extends StatefulWidget {
   const EmergencyHotlinesScreen({Key? key}) : super(key: key);
 
   @override
-  State<EmergencyHotlinesScreen> createState() => _EmergencyHotlinesScreenState();
+  State<EmergencyHotlinesScreen> createState() =>
+      _EmergencyHotlinesScreenState();
 }
 
 class _EmergencyHotlinesScreenState extends State<EmergencyHotlinesScreen>
@@ -27,22 +28,17 @@ class _EmergencyHotlinesScreenState extends State<EmergencyHotlinesScreen>
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-    
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
 
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.3),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutCubic,
-    ));
+    ).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+    );
 
     _animationController.forward();
   }
@@ -59,10 +55,8 @@ class _EmergencyHotlinesScreenState extends State<EmergencyHotlinesScreen>
       backgroundColor: const Color.fromARGB(255, 25, 24, 24),
       body: CustomScrollView(
         slivers: [
-          EmergencyAppBar(
-            fadeAnimation: _fadeAnimation,
-          ),
-          
+          EmergencyAppBar(fadeAnimation: _fadeAnimation),
+
           SliverPadding(
             padding: const EdgeInsets.all(20),
             sliver: SliverList(
@@ -117,9 +111,7 @@ class _EmergencyHotlinesScreenState extends State<EmergencyHotlinesScreen>
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const AppGuideScreen(),
-              ),
+              MaterialPageRoute(builder: (context) => const AppGuideScreen()),
             );
           },
           borderRadius: BorderRadius.circular(20),
@@ -164,7 +156,7 @@ class _EmergencyHotlinesScreenState extends State<EmergencyHotlinesScreen>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Learn about features, AI predictions & safety tips',
+                        'Learn about features & safety tips',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.white.withOpacity(0.7),

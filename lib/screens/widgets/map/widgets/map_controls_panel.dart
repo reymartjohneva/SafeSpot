@@ -3,13 +3,14 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:safe_spot/services/geofence_service.dart';
+import 'package:safe_spot/screens/location_history_screen.dart';
 
 class MapControlsPanel extends StatelessWidget {
   final MapController mapController;
   final Position? currentPosition;
   final VoidCallback onCenterMapOnCurrentLocation;
   final VoidCallback onFitMapToBounds;
-  
+
   // Geofence-related properties
   final bool isDrawingGeofence;
   final bool isDragging;
@@ -23,10 +24,14 @@ class MapControlsPanel extends StatelessWidget {
   final VoidCallback onLoadGeofences;
   final Future<void> Function(String, bool) onToggleGeofenceStatus;
   final Future<void> Function(String, int) onDeleteGeofence;
-  
+
   // NEW: History points visibility
   final bool showHistoryPoints;
   final VoidCallback onToggleHistoryPoints;
+
+  // NEW: Selected device info for history screen
+  final String? selectedDeviceId;
+  final String? selectedDeviceName;
 
   const MapControlsPanel({
     Key? key,
@@ -48,6 +53,8 @@ class MapControlsPanel extends StatelessWidget {
     required this.onDeleteGeofence,
     required this.showHistoryPoints,
     required this.onToggleHistoryPoints,
+    this.selectedDeviceId,
+    this.selectedDeviceName,
   }) : super(key: key);
 
   @override
@@ -81,21 +88,23 @@ class MapControlsPanel extends StatelessWidget {
                 iconColor: Colors.indigo.shade600,
                 tooltip: 'Geofences',
               ),
-              
+
               const SizedBox(height: 6),
-              
+
               _buildCompactButton(
                 icon: isDrawingGeofence ? Icons.stop : Icons.draw,
                 onPressed: isDrawingGeofence ? onStopDrawing : onStartDrawing,
-                backgroundColor: isDrawingGeofence
-                    ? Colors.orange.shade100
-                    : Colors.orange.shade50,
-                iconColor: isDrawingGeofence
-                    ? Colors.orange.shade700
-                    : Colors.orange.shade600,
+                backgroundColor:
+                    isDrawingGeofence
+                        ? Colors.orange.shade100
+                        : Colors.orange.shade50,
+                iconColor:
+                    isDrawingGeofence
+                        ? Colors.orange.shade700
+                        : Colors.orange.shade600,
                 tooltip: isDrawingGeofence ? 'Stop' : 'Draw',
               ),
-              
+
               // Clear points button (compact, only when drawing)
               if (isDrawingGeofence && currentGeofencePoints.isNotEmpty) ...[
                 const SizedBox(height: 6),
@@ -115,42 +124,49 @@ class MapControlsPanel extends StatelessWidget {
                   tooltip: 'Clear',
                 ),
               ],
-              
+
               const SizedBox(height: 8),
-              
+
               // Thin divider
-              Container(
-                height: 0.5,
-                width: 20,
-                color: Colors.grey.shade300,
-              ),
-              
+              Container(height: 0.5, width: 20, color: Colors.grey.shade300),
+
               const SizedBox(height: 8),
-              
+
               // NEW: History Points Toggle Button
               _buildCompactButton(
-                icon: showHistoryPoints ? Icons.visibility : Icons.visibility_off,
+                icon:
+                    showHistoryPoints ? Icons.visibility : Icons.visibility_off,
                 onPressed: onToggleHistoryPoints,
-                backgroundColor: showHistoryPoints 
-                    ? Colors.amber.shade50 
-                    : Colors.grey.shade100,
-                iconColor: showHistoryPoints 
-                    ? Colors.amber.shade700 
-                    : Colors.grey.shade500,
+                backgroundColor:
+                    showHistoryPoints
+                        ? Colors.amber.shade50
+                        : Colors.grey.shade100,
+                iconColor:
+                    showHistoryPoints
+                        ? Colors.amber.shade700
+                        : Colors.grey.shade500,
                 tooltip: showHistoryPoints ? 'Hide History' : 'Show History',
               ),
-              
+
+              const SizedBox(height: 6),
+
+              // NEW: Location History Screen Button
+              if (selectedDeviceId != null)
+                _buildCompactButton(
+                  icon: Icons.history_rounded,
+                  onPressed: () => _navigateToHistoryScreen(context),
+                  backgroundColor: Colors.deepPurple.shade50,
+                  iconColor: Colors.deepPurple.shade600,
+                  tooltip: 'History Details',
+                ),
+
               const SizedBox(height: 8),
-              
+
               // Thin divider
-              Container(
-                height: 0.5,
-                width: 20,
-                color: Colors.grey.shade300,
-              ),
-              
+              Container(height: 0.5, width: 20, color: Colors.grey.shade300),
+
               const SizedBox(height: 8),
-              
+
               // Navigation Controls
               _buildCompactButton(
                 icon: Icons.fit_screen_outlined,
@@ -159,23 +175,25 @@ class MapControlsPanel extends StatelessWidget {
                 iconColor: Colors.purple.shade600,
                 tooltip: 'Fit',
               ),
-              
+
               const SizedBox(height: 6),
-              
+
               _buildCompactButton(
                 icon: Icons.my_location_outlined,
                 onPressed: onCenterMapOnCurrentLocation,
-                backgroundColor: currentPosition != null 
-                    ? Colors.blue.shade50 
-                    : Colors.grey.shade100,
-                iconColor: currentPosition != null 
-                    ? Colors.blue.shade600 
-                    : Colors.grey.shade500,
+                backgroundColor:
+                    currentPosition != null
+                        ? Colors.blue.shade50
+                        : Colors.grey.shade100,
+                iconColor:
+                    currentPosition != null
+                        ? Colors.blue.shade600
+                        : Colors.grey.shade500,
                 tooltip: 'Location',
               ),
-              
+
               const SizedBox(height: 6),
-              
+
               _buildCompactButton(
                 icon: Icons.home_outlined,
                 onPressed: () {
@@ -185,18 +203,14 @@ class MapControlsPanel extends StatelessWidget {
                 iconColor: Colors.green.shade600,
                 tooltip: 'Home',
               ),
-              
+
               const SizedBox(height: 8),
-              
+
               // Divider
-              Container(
-                height: 0.5,
-                width: 20,
-                color: Colors.grey.shade300,
-              ),
-              
+              Container(height: 0.5, width: 20, color: Colors.grey.shade300),
+
               const SizedBox(height: 8),
-              
+
               // Zoom Controls
               _buildCompactButton(
                 icon: Icons.add,
@@ -205,9 +219,9 @@ class MapControlsPanel extends StatelessWidget {
                 iconColor: Colors.teal.shade600,
                 tooltip: 'Zoom+',
               ),
-              
+
               const SizedBox(height: 6),
-              
+
               _buildCompactButton(
                 icon: Icons.remove,
                 onPressed: () => _zoomOut(),
@@ -247,11 +261,7 @@ class MapControlsPanel extends StatelessWidget {
                 width: 0.5,
               ),
             ),
-            child: Icon(
-              icon,
-              color: iconColor,
-              size: 18,
-            ),
+            child: Icon(icon, color: iconColor, size: 18),
           ),
         ),
       ),
@@ -277,147 +287,183 @@ class MapControlsPanel extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        child: DraggableScrollableSheet(
-          initialChildSize: 0.6,
-          maxChildSize: 0.85,
-          minChildSize: 0.3,
-          builder: (context, scrollController) => Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 32,
-                    height: 3,
-                    margin: const EdgeInsets.only(bottom: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Geofences',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
+      builder:
+          (context) => Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: DraggableScrollableSheet(
+              initialChildSize: 0.6,
+              maxChildSize: 0.85,
+              minChildSize: 0.3,
+              builder:
+                  (context, scrollController) => Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (isLoadingGeofences)
-                          Container(
-                            width: 16,
-                            height: 16,
-                            margin: const EdgeInsets.only(right: 8),
-                            child: const CircularProgressIndicator(strokeWidth: 2),
+                        Center(
+                          child: Container(
+                            width: 32,
+                            height: 3,
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade300,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
                           ),
-                        IconButton(
-                          onPressed: onLoadGeofences,
-                          icon: const Icon(Icons.refresh, size: 20),
-                          padding: const EdgeInsets.all(8),
-                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         ),
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.close, size: 20),
-                          padding: const EdgeInsets.all(8),
-                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Geofences',
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (isLoadingGeofences)
+                                  Container(
+                                    width: 16,
+                                    height: 16,
+                                    margin: const EdgeInsets.only(right: 8),
+                                    child: const CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                IconButton(
+                                  onPressed: onLoadGeofences,
+                                  icon: const Icon(Icons.refresh, size: 20),
+                                  padding: const EdgeInsets.all(8),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 32,
+                                    minHeight: 32,
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  icon: const Icon(Icons.close, size: 20),
+                                  padding: const EdgeInsets.all(8),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 32,
+                                    minHeight: 32,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Expanded(
+                          child:
+                              geofences.isEmpty
+                                  ? _buildEmptyGeofenceState(context)
+                                  : ListView.builder(
+                                    controller: scrollController,
+                                    itemCount: geofences.length,
+                                    itemBuilder: (context, index) {
+                                      final geofence = geofences[index];
+                                      return Card(
+                                        margin: const EdgeInsets.only(
+                                          bottom: 6,
+                                        ),
+                                        elevation: 1,
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(12),
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                width: 16,
+                                                height: 16,
+                                                decoration: BoxDecoration(
+                                                  color: geofence.color,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      geofence.name,
+                                                      style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      '${geofence.points.length} pts • ${geofence.isActive ? "Active" : "Inactive"}',
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        color:
+                                                            Colors
+                                                                .grey
+                                                                .shade600,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              Switch(
+                                                value: geofence.isActive,
+                                                onChanged: (value) async {
+                                                  await onToggleGeofenceStatus(
+                                                    geofence.id,
+                                                    value,
+                                                  );
+                                                },
+                                                materialTapTargetSize:
+                                                    MaterialTapTargetSize
+                                                        .shrinkWrap,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              IconButton(
+                                                onPressed: () async {
+                                                  final confirmed =
+                                                      await _showDeleteConfirmation(
+                                                        context,
+                                                        geofence.name,
+                                                      );
+                                                  if (confirmed == true) {
+                                                    await onDeleteGeofence(
+                                                      geofence.id,
+                                                      index,
+                                                    );
+                                                    Navigator.pop(context);
+                                                  }
+                                                },
+                                                icon: const Icon(
+                                                  Icons.delete,
+                                                  color: Colors.red,
+                                                  size: 18,
+                                                ),
+                                                padding: const EdgeInsets.all(
+                                                  8,
+                                                ),
+                                                constraints:
+                                                    const BoxConstraints(
+                                                      minWidth: 32,
+                                                      minHeight: 32,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: geofences.isEmpty
-                      ? _buildEmptyGeofenceState(context)
-                      : ListView.builder(
-                          controller: scrollController,
-                          itemCount: geofences.length,
-                          itemBuilder: (context, index) {
-                            final geofence = geofences[index];
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 6),
-                              elevation: 1,
-                              child: Padding(
-                                padding: const EdgeInsets.all(12),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 16,
-                                      height: 16,
-                                      decoration: BoxDecoration(
-                                        color: geofence.color,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            geofence.name,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                          Text(
-                                            '${geofence.points.length} pts • ${geofence.isActive ? "Active" : "Inactive"}',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.grey.shade600,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Switch(
-                                      value: geofence.isActive,
-                                      onChanged: (value) async {
-                                        await onToggleGeofenceStatus(geofence.id, value);
-                                      },
-                                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    IconButton(
-                                      onPressed: () async {
-                                        final confirmed = await _showDeleteConfirmation(
-                                          context,
-                                          geofence.name,
-                                        );
-                                        if (confirmed == true) {
-                                          await onDeleteGeofence(geofence.id, index);
-                                          Navigator.pop(context);
-                                        }
-                                      },
-                                      icon: const Icon(Icons.delete, color: Colors.red, size: 18),
-                                      padding: const EdgeInsets.all(8),
-                                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-              ],
+                  ),
             ),
           ),
-        ),
-      ),
     );
   }
 
@@ -426,27 +472,17 @@ class MapControlsPanel extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.layers_outlined,
-            size: 40,
-            color: Colors.grey.shade400,
-          ),
+          Icon(Icons.layers_outlined, size: 40, color: Colors.grey.shade400),
           const SizedBox(height: 12),
           Text(
             isLoadingGeofences ? 'Loading...' : 'No geofences yet',
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
           ),
           if (!isLoadingGeofences) ...[
             const SizedBox(height: 6),
             Text(
               'Tap draw to create one',
-              style: TextStyle(
-                color: Colors.grey.shade500,
-                fontSize: 11,
-              ),
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
             ),
           ],
         ],
@@ -454,24 +490,43 @@ class MapControlsPanel extends StatelessWidget {
     );
   }
 
-  Future<bool?> _showDeleteConfirmation(BuildContext context, String geofenceName) {
+  void _navigateToHistoryScreen(BuildContext context) {
+    if (selectedDeviceId == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => LocationHistoryScreen(
+              deviceId: selectedDeviceId!,
+              deviceName: selectedDeviceName ?? 'Device',
+            ),
+      ),
+    );
+  }
+
+  Future<bool?> _showDeleteConfirmation(
+    BuildContext context,
+    String geofenceName,
+  ) {
     return showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Geofence'),
-        content: Text('Delete "$geofenceName"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Delete Geofence'),
+            content: Text('Delete "$geofenceName"?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Delete'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
     );
   }
 }

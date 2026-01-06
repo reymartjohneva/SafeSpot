@@ -50,6 +50,8 @@ class DeviceScreenStateData {
 
   // NEW: History points visibility state
   bool showHistoryPoints = true;
+  DateTime? selectedHistoryDate;
+  List<DateTime> availableDates = [];
 
   // Road-snapped paths
   Map<String, List<LatLng>> snappedPaths = {};

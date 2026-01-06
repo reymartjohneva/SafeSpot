@@ -174,6 +174,11 @@ class DeviceMapWidget extends StatelessWidget {
               onDeleteGeofence: onDeleteGeofence,
               showHistoryPoints: showHistoryPoints, // PASS IT HERE
               onToggleHistoryPoints: onToggleHistoryPoints, // PASS IT HERE
+              selectedDeviceId: selectedDeviceId, // PASS SELECTED DEVICE
+              selectedDeviceName:
+                  selectedDeviceId != null
+                      ? findDeviceById(selectedDeviceId!)?.deviceName
+                      : null, // PASS DEVICE NAME
             ),
           ],
         );

@@ -32,13 +32,17 @@ mixin DeviceScreenDeviceMixin<T extends StatefulWidget> on State<T> {
 
     try {
       for (var device in state.devices) {
-        final history = await DeviceService.getDeviceLocationHistory(
+        final allHistory = await DeviceService.getDeviceLocationHistory(
           deviceId: device.deviceId,
           limit: 100,
         );
+
+        // Filter to show only today's points or just the latest one
+        final filteredHistory = _filterHistoryForMapView(allHistory);
+
         if (mounted) {
           setState(() {
-            state.deviceLocations[device.deviceId] = history;
+            state.deviceLocations[device.deviceId] = filteredHistory;
           });
         }
       }
@@ -73,21 +77,50 @@ mixin DeviceScreenDeviceMixin<T extends StatefulWidget> on State<T> {
 
   Future<void> loadDeviceLocationHistory(String deviceId) async {
     try {
-      final history = await DeviceService.getDeviceLocationHistory(
+      final allHistory = await DeviceService.getDeviceLocationHistory(
         deviceId: deviceId,
       );
+
+      // Filter to show only today's points or just the latest one
+      final filteredHistory = _filterHistoryForMapView(allHistory);
+
       if (mounted) {
         setState(() {
-          state.deviceLocations[deviceId] = history;
+          state.deviceLocations[deviceId] = filteredHistory;
         });
 
         // Snap to roads after loading history
-        if (history.length >= 2) {
+        if (filteredHistory.length >= 2) {
           _snapPathIfMixinAvailable(deviceId);
         }
       }
     } catch (e) {
       print('Failed to load location history for $deviceId: $e');
+    }
+  }
+
+  // Filter history to show only today's points, or just the latest point if no data today
+  List<LocationHistory> _filterHistoryForMapView(
+    List<LocationHistory> history,
+  ) {
+    if (history.isEmpty) return history;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+
+    // Filter for today's points
+    final todayPoints =
+        history.where((point) {
+          final pointTime = point.timestamp;
+          return pointTime.isAfter(today) && pointTime.isBefore(tomorrow);
+        }).toList();
+
+    // If we have today's points, return them, otherwise return only the latest point
+    if (todayPoints.isNotEmpty) {
+      return todayPoints;
+    } else {
+      return [history.first]; // Return only the most recent point
     }
   }
 
